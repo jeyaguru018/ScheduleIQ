@@ -1,0 +1,67 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: scheduleiq-backend
+
+  datasource:
+    # URL for local PostgreSQL database. We will auto-connect to a database named 'scheduleiq_db'
+    url: jdbc:postgresql://localhost:5432/scheduleiq_db
+    username: postgres
+    # NOTE: If your local PostgreSQL has a different password, change it below!
+    password: "#Jeyaguru064"
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      # Auto-generates and updates the database tables based on our Java Classes automatically
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # SMTP Mail settings using Gmail App Password
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: jeyaguru018@gmail.com
+    password: ${MAIL_PASSWORD:dummy_password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  # Security OAuth2 Google login settings
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:dummy_id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:dummy_secret}
+            scope:
+              - email
+              - profile
+
+  # Thread pool sizing for async auto-scheduling optimization jobs
+  task:
+    execution:
+      pool:
+        core-size: 4
+        max-size: 8
+        queue-capacity: 100
+        thread-name-prefix: opt-job-
+
+# Custom properties
+app:
+  jwt:
+    # Secret key for JWT auth tokens. 256-bit safe secret
+    secret: dGhpc2lzYW11bHRpcGxlcmVnaW9uYWx3b3JrZm9yY2VvcHRpbWl6YXRpb25zZWN1cml0eWtleTI1NmJpdHM=
+    expiration-ms: 86400000 # 24 hours
+  ml-service:
+    url: http://localhost:8000

@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --surface: #ffffff;
+    --surface-variant: #f3f4f6;
+    --on-surface: #111827;
+    --on-surface-variant: #4b5563;
+    
+    --primary: #4f46e5;
+    --on-primary: #ffffff;
+    --primary-container: #e0e7ff;
+    --on-primary-container: #312e81;
+
+    --secondary: #0ea5e9;
+    --on-secondary: #ffffff;
+    --secondary-container: #e0f2fe;
+    --on-secondary-container: #0c4a6e;
+
+    --error: #ef4444;
+    --on-error: #ffffff;
+    --error-container: #fee2e2;
+    --on-error-container: #7f1d1d;
+
+    --success: #10b981;
+    --warning: #f59e0b;
+
+    --outline: #d1d5db;
+    --outline-variant: #e5e7eb;
+    
+    --scrim: #000000;
+  }
+
+  body {
+    @apply bg-surface text-on-surface font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  /* For the background pattern in the login screen */
+  .grid-pattern {
+    background-size: 40px 40px;
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  }
+}

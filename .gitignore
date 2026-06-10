@@ -1,0 +1,63 @@
+# ScheduleIQ .gitignore
+
+# ── Java / Maven ─────────────────────────────────────────────────
+target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/wrapper/maven-wrapper.jar
+spring-beans.xml
+
+# ── Node / React ─────────────────────────────────────────────────
+node_modules/
+dist/
+.vite/
+*.local
+
+# ── Python ───────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.env/
+*.egg-info/
+.eggs/
+
+# ── Environment secrets — NEVER COMMIT THESE ─────────────────────
+.env
+*.env.local
+*.env.production
+secrets.yml
+application-local.yml
+application-prod.yml
+
+# ── Docker ───────────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── IDE / Editor ─────────────────────────────────────────────────
+.idea/
+*.iml
+.eclipse/
+.settings/
+.project
+.classpath
+.vscode/
+*.suo
+*.user
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── JDK (bundled, do not version) ────────────────────────────────
+scheduleiq-backend/jdk-21/
+scheduleiq-backend/jdk-21.zip
+
+# ── Models (large binary ML artifacts) ──────────────────────────
+scheduleiq-ml-service/models/*.pkl
+scheduleiq-ml-service/models/*.joblib
