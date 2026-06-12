@@ -23,7 +23,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (employeeRepository.count() > 0) {
+        if (forecastingSignalRepository.count() > 0) {
             System.out.println(">>> Database already seeded. Skipping initial seeding.");
             return;
         }
