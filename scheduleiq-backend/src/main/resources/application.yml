@@ -7,10 +7,10 @@ spring:
 
   datasource:
     # URL for local PostgreSQL database. We will auto-connect to a database named 'scheduleiq_db'
-    url: jdbc:postgresql://localhost:5432/scheduleiq_db
-    username: postgres
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/scheduleiq_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
     # NOTE: If your local PostgreSQL has a different password, change it below!
-    password: "#Jeyaguru064"
+    password: ${SPRING_DATASOURCE_PASSWORD:#Jeyaguru064}
     driver-class-name: org.postgresql.Driver
 
   jpa:
