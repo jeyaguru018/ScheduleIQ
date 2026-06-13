@@ -13,8 +13,12 @@ export function DemandForecast() {
   const [resolving, setResolving] = useState(false);
   const { showToast } = useToast();
 
-  // Mock data for the Area Chart (changes slightly based on selected date to feel alive)
-  const hourlyData = [
+  const [hourlyData, setHourlyData] = useState([]);
+  const [weeklyData, setWeeklyData] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fallback mock data
+  const defaultHourlyData = [
     { time: '6am', demand: 10, staffing: 12 },
     { time: '8am', demand: 25, staffing: 28 },
     { time: '10am', demand: 45, staffing: 40 },
@@ -27,37 +31,119 @@ export function DemandForecast() {
     { time: '11pm', demand: 15, staffing: 20 },
   ];
 
-  // Generate dynamic weekly data based on selectedDate
-  const generateWeeklyData = (baseDateStr) => {
-    const baseDate = new Date(baseDateStr);
-    const day = baseDate.getDay();
-    const diff = baseDate.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(baseDate.setDate(diff));
-    
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const mockVals = [42, 38, 45, 62, 58, 75, 68];
-    const mockTargets = [40, 40, 40, 48, 50, 63, 58];
-    
-    return days.map((dayName, i) => {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      const isToday = d.toISOString().split('T')[0] === selectedDate;
-      const val = mockVals[i];
-      const target = mockTargets[i];
-      const diffVal = val - target;
-      
-      return {
-        day: dayName,
-        date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        val,
-        target,
-        diff: diffVal > 0 ? `+${diffVal}` : (diffVal < 0 ? `${diffVal}` : '-'),
-        isToday
-      };
-    });
-  };
+  useEffect(() => {
+    fetchForecastData();
+  }, [selectedDate]);
 
-  const weeklyData = generateWeeklyData(selectedDate);
+  const fetchForecastData = async () => {
+    setLoading(true);
+    try {
+      const startStr = `${selectedDate}T00:00:00`;
+      const endStr = `${selectedDate}T23:59:59`;
+      
+      // 1. Fetch Daily Hourly Demand Signals from database
+      const dailySignals = await api.getDemandSignals(startStr, endStr);
+      if (dailySignals && dailySignals.length > 0) {
+        const mapped = dailySignals.map(item => {
+          const dt = new Date(item.timestamp);
+          let hours = dt.getHours();
+          const ampm = hours >= 12 ? 'pm' : 'am';
+          hours = hours % 12;
+          hours = hours ? hours : 12;
+          const timeLabel = `${hours}${ampm}`;
+          return {
+            time: timeLabel,
+            demand: item.footfall,
+            staffing: Math.max(5, Math.floor(item.footfall * 0.9))
+          };
+        });
+        setHourlyData(mapped);
+      } else {
+        setHourlyData(defaultHourlyData);
+      }
+
+      // 2. Fetch Weekly data
+      const baseDate = new Date(selectedDate);
+      const day = baseDate.getDay();
+      const diff = baseDate.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(baseDate.setDate(diff));
+      
+      const startOfWeek = monday.toISOString().split('T')[0] + 'T00:00:00';
+      const tempEnd = new Date(monday);
+      tempEnd.setDate(monday.getDate() + 6);
+      const endOfWeek = tempEnd.toISOString().split('T')[0] + 'T23:59:59';
+
+      const weeklySignals = await api.getDemandSignals(startOfWeek, endOfWeek);
+      
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const mockTargets = [40, 40, 40, 48, 50, 63, 58];
+
+      const formattedWeekly = days.map((dayName, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        const dateStr = d.toISOString().split('T')[0];
+        const isToday = dateStr === selectedDate;
+        
+        let val = 40; // Default baseline fallback
+        if (weeklySignals && weeklySignals.length > 0) {
+          const daySignals = weeklySignals.filter(s => s.timestamp.startsWith(dateStr));
+          if (daySignals.length > 0) {
+            val = Math.max(...daySignals.map(s => s.footfall));
+          } else {
+            const mockVals = [42, 38, 45, 62, 58, 75, 68];
+            val = mockVals[i];
+          }
+        } else {
+          const mockVals = [42, 38, 45, 62, 58, 75, 68];
+          val = mockVals[i];
+        }
+
+        const target = mockTargets[i];
+        const diffVal = val - target;
+
+        return {
+          day: dayName,
+          date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          val,
+          target,
+          diff: diffVal > 0 ? `+${diffVal}` : (diffVal < 0 ? `${diffVal}` : '-'),
+          isToday
+        };
+      });
+      setWeeklyData(formattedWeekly);
+
+    } catch (err) {
+      console.error("Error loading forecast details:", err);
+      setHourlyData(defaultHourlyData);
+      
+      const baseDate = new Date(selectedDate);
+      const day = baseDate.getDay();
+      const diff = baseDate.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(baseDate.setDate(diff));
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const mockVals = [42, 38, 45, 62, 58, 75, 68];
+      const mockTargets = [40, 40, 40, 48, 50, 63, 58];
+      const formattedWeekly = days.map((dayName, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        const dateStr = d.toISOString().split('T')[0];
+        const val = mockVals[i];
+        const target = mockTargets[i];
+        const diffVal = val - target;
+        return {
+          day: dayName,
+          date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          val,
+          target,
+          diff: diffVal > 0 ? `+${diffVal}` : (diffVal < 0 ? `${diffVal}` : '-'),
+          isToday: dateStr === selectedDate
+        };
+      });
+      setWeeklyData(formattedWeekly);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleResolveGaps = async () => {
     setResolving(true);
@@ -66,8 +152,8 @@ export function DemandForecast() {
       const end = new Date(start);
       end.setDate(start.getDate() + 7);
       
-      const startStr = start.toISOString().split('T')[0];
-      const endStr = end.toISOString().split('T')[0];
+      const startStr = start.toISOString().split('T')[0] + 'T00:00:00';
+      const endStr = end.toISOString().split('T')[0] + 'T23:59:59';
 
       await api.generateSchedule(startStr, endStr, 150000);
       showToast(`AI constraint solver successfully resolved operational staffing shortages!`);

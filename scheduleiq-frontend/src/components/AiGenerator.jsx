@@ -93,8 +93,8 @@ export function AiGenerator() {
       const end = new Date(start);
       end.setDate(start.getDate() + 7);
       
-      const startStr = start.toISOString().split('T')[0];
-      const endStr = end.toISOString().split('T')[0];
+      const startStr = start.toISOString().split('T')[0] + 'T00:00:00';
+      const endStr = end.toISOString().split('T')[0] + 'T23:59:59';
 
       // Call OR-Tools scheduler solver asynchronously
       await api.generateSchedule(startStr, endStr, budget);

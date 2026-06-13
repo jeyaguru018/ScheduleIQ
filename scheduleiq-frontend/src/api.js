@@ -189,6 +189,10 @@ export async function getAlerts(threshold = 0.15) {
   return apiFetch(`/api/attendance/alerts?threshold=${threshold}`);
 }
 
+export async function getDemandSignals(start, end) {
+  return apiFetch(`/api/demand?start=${start}&end=${end}`);
+}
+
 // ── Health Check ──────────────────────────────────────────────────────────────
 
 export async function healthCheck() {

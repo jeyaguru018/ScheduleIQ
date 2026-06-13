@@ -329,7 +329,9 @@ export function EmployeeRoster() {
               onChange={e => setFormData({...formData, role: e.target.value})}
             >
               <option value="CASHIER">Cashier</option>
-              <option value="MANAGER">Manager</option>
+              <option value="LEAD_CASHIER">Lead Cashier</option>
+              <option value="STOCKER">Stocker</option>
+              <option value="DELIVERY_BOY">Delivery Boy</option>
             </select>
           </div>
 
@@ -359,7 +361,9 @@ export function EmployeeRoster() {
               onChange={e => setFormData({...formData, role: e.target.value})}
             >
               <option value="CASHIER">Cashier</option>
-              <option value="MANAGER">Manager</option>
+              <option value="LEAD_CASHIER">Lead Cashier</option>
+              <option value="STOCKER">Stocker</option>
+              <option value="DELIVERY_BOY">Delivery Boy</option>
             </select>
           </div>
 
