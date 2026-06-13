@@ -45,6 +45,15 @@ public class Shift {
     @Builder.Default
     private Double noShowRisk = 0.0;
 
+    @Column(name = "actual_start_time")
+    private LocalDateTime actualStartTime;
+
+    @Column(name = "actual_end_time")
+    private LocalDateTime actualEndTime;
+
+    @Column(name = "clock_status")
+    private String clockStatus; // null, "CLOCKED_IN", "CLOCKED_OUT"
+
     @Version // CRITICAL: Guards against double-allocation or race swaps
     private Long version;
 }

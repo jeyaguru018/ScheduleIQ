@@ -79,4 +79,22 @@ public class AutoSchedulerController {
         Shift updated = shiftRepository.save(shift);
         return ResponseEntity.ok(updated);
     }
+
+    @PutMapping("/shifts/{id}/clock-in")
+    public ResponseEntity<Shift> clockIn(@PathVariable Long id) {
+        Shift shift = shiftRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Shift not found"));
+        shift.setActualStartTime(LocalDateTime.now());
+        shift.setClockStatus("CLOCKED_IN");
+        return ResponseEntity.ok(shiftRepository.save(shift));
+    }
+
+    @PutMapping("/shifts/{id}/clock-out")
+    public ResponseEntity<Shift> clockOut(@PathVariable Long id) {
+        Shift shift = shiftRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Shift not found"));
+        shift.setActualEndTime(LocalDateTime.now());
+        shift.setClockStatus("CLOCKED_OUT");
+        return ResponseEntity.ok(shiftRepository.save(shift));
+    }
 }

@@ -7,7 +7,8 @@ import {
   CheckCircle2, 
   ArrowLeftRight, 
   AlertTriangle,
-  MessageCircle
+  MessageCircle,
+  DollarSign
 } from 'lucide-react';
 import * as api from '../api';
 
@@ -18,6 +19,7 @@ export function CommandCenter() {
     coverage: 0,
     pendingSwaps: 0,
     noShowRisk: 0,
+    totalCost: 0,
     timeline: [],
     alerts: [],
     fairness: []
@@ -86,11 +88,16 @@ export function CommandCenter() {
             wage: (emp.currentHoursThisWeek || 0) * (emp.baseHourlyRate || 0)
           }));
 
+        const totalWages = employees.reduce((sum, emp) => {
+          return sum + ((emp.currentHoursThisWeek || 0) * (emp.baseHourlyRate || 0));
+        }, 0);
+
         setData({
           shiftsThisWeek: shifts.length,
           coverage: shifts.length > 0 ? 98 : 0,
           pendingSwaps: pendingCount,
           noShowRisk: totalAlertsCount,
+          totalCost: totalWages,
           timeline: mappedTimeline,
           alerts: mappedAlerts,
           fairness: mappedFairness
@@ -127,18 +134,23 @@ export function CommandCenter() {
 
         {/* Top Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <Card className="p-4 flex flex-col justify-between h-32 border-outline-variant shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
+          <Card className="p-4 flex flex-col justify-between h-32 border-outline-variant shadow-sm hover:shadow-md transition-all hover:-translate-y-1 bg-white">
             <div className="flex justify-between items-start">
-              <span className="text-xs font-bold text-outline uppercase tracking-wider">Shifts This Week</span>
-              <CalendarDays className="w-4 h-4 text-[#8b5cf6]" />
+              <span className="text-xs font-bold text-outline uppercase tracking-wider">Weekly Labor Cost</span>
+              <DollarSign className="w-4 h-4 text-[#8b5cf6]" />
             </div>
             <div>
-              <div className="text-3xl font-extrabold text-on-surface">{data.shiftsThisWeek}</div>
-              {/* Mini bar chart representation */}
-              <div className="flex items-end gap-1 mt-2 h-6">
-                {[4,6,8,5,9,7,6].map((h, i) => (
-                  <div key={i} className="flex-1 bg-[#8b5cf6] rounded-t-sm opacity-80" style={{ height: `${h*10}%` }}></div>
-                ))}
+              <div className="text-3xl font-extrabold text-[#1e1a8a]">₹{data.totalCost?.toLocaleString('en-IN')}</div>
+              {/* Budget Progress Bar */}
+              <div className="w-full bg-surface-variant h-1.5 rounded-full mt-3 overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all ${data.totalCost > 120000 ? 'bg-error' : 'bg-[#8b5cf6]'}`} 
+                  style={{ width: `${Math.min((data.totalCost / 120000) * 100, 100)}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between text-[9px] font-bold text-outline uppercase tracking-wider mt-1 leading-none">
+                <span>Spent: {Math.round((data.totalCost / 120000) * 100)}%</span>
+                <span>Cap: ₹1,20,000</span>
               </div>
             </div>
           </Card>

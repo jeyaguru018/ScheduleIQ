@@ -9,6 +9,7 @@ import { useToast } from './common/Toast';
 
 export function AlertCenter() {
   const [alerts, setAlerts] = useState([]);
+  const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [backups, setBackups] = useState([]);
@@ -18,7 +19,17 @@ export function AlertCenter() {
 
   useEffect(() => {
     loadAlerts();
+    loadLeaves();
   }, []);
+
+  const loadLeaves = async () => {
+    try {
+      const data = await api.getAllLeaves();
+      setLeaves(data.filter(l => l.status === 'PENDING') || []);
+    } catch (e) {
+      console.warn("Failed to load leaves: ", e.message);
+    }
+  };
 
   const loadAlerts = async () => {
     setLoading(true);
@@ -59,6 +70,27 @@ export function AlertCenter() {
       await loadAlerts();
     } catch (e) {
       showToast(e.message || "Failed to assign replacement.", 'error');
+    }
+  };
+
+  const handleApproveLeave = async (leaveId) => {
+    try {
+      await api.approveLeave(leaveId);
+      showToast("Leave request approved successfully!");
+      await loadLeaves();
+      await loadAlerts();
+    } catch (e) {
+      showToast(e.message || "Failed to approve leave.", 'error');
+    }
+  };
+
+  const handleRejectLeave = async (leaveId) => {
+    try {
+      await api.rejectLeave(leaveId);
+      showToast("Leave request rejected.");
+      await loadLeaves();
+    } catch (e) {
+      showToast(e.message || "Failed to reject leave.", 'error');
     }
   };
 
@@ -176,8 +208,48 @@ export function AlertCenter() {
                 </div>
 
               </Card>
-            );
           })}
+        </div>
+
+        {/* Pending Leave Requests */}
+        <div className="pt-6 border-t border-outline-variant/60">
+          <h3 className="text-xl font-bold text-on-surface mb-4">Pending Leave Requests ({leaves.length})</h3>
+          {leaves.length === 0 ? (
+            <div className="p-6 text-center text-sm font-semibold text-outline bg-surface border border-dashed border-outline-variant rounded-xl shadow-sm">
+              No pending leave requests.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {leaves.map(l => (
+                <Card key={l.id} className="p-5 border-outline-variant shadow-sm flex items-center justify-between bg-surface">
+                  <div className="flex items-center gap-4">
+                    <Avatar name={l.employee ? l.employee.name : 'Employee'} size="md" />
+                    <div>
+                      <h4 className="font-bold text-sm text-on-surface">{l.employee ? l.employee.name : 'Unknown Employee'}</h4>
+                      <p className="text-xs font-semibold text-outline-variant mt-0.5">Requested Date: {l.leaveDate}</p>
+                      <p className="text-xs text-on-surface-variant font-medium mt-1">Reason: "{l.reason}"</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="text-error border-error/20 hover:bg-error/5 font-bold text-xs px-3 py-1.5"
+                      onClick={() => handleRejectLeave(l.id)}
+                    >
+                      Reject
+                    </Button>
+                    <Button 
+                      variant="primary" 
+                      className="bg-[#1e1a8a] text-white hover:bg-[#1e1a8a]/90 font-bold text-xs px-3 py-1.5 shadow-sm"
+                      onClick={() => handleApproveLeave(l.id)}
+                    >
+                      Approve
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>

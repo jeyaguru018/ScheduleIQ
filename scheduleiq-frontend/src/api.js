@@ -193,6 +193,14 @@ export async function getDemandSignals(start, end) {
   return apiFetch(`/api/demand?start=${start}&end=${end}`);
 }
 
+export async function clockInShift(shiftId) {
+  return apiFetch(`/api/schedule/shifts/${shiftId}/clock-in`, { method: 'PUT' });
+}
+
+export async function clockOutShift(shiftId) {
+  return apiFetch(`/api/schedule/shifts/${shiftId}/clock-out`, { method: 'PUT' });
+}
+
 // ── Health Check ──────────────────────────────────────────────────────────────
 
 export async function healthCheck() {
