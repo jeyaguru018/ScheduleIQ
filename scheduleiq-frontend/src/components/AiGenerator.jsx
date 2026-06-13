@@ -97,7 +97,29 @@ export function AiGenerator() {
       const endStr = end.toISOString().split('T')[0] + 'T23:59:59';
 
       // Call OR-Tools scheduler solver asynchronously
-      await api.generateSchedule(startStr, endStr, budget);
+      const jobRes = await api.generateSchedule(startStr, endStr, budget);
+      const jobId = jobRes.jobId;
+
+      // Enter status polling loop
+      let status = "PENDING";
+      let attempts = 0;
+      const maxAttempts = 30; // 45 seconds total timeout limit
+
+      while (status === "PENDING" && attempts < maxAttempts) {
+        // Wait 1.5s between polling checks
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        const jobInfo = await api.getJobStatus(jobId);
+        status = jobInfo.status;
+        attempts++;
+      }
+
+      if (status === "FAILED") {
+        throw new Error("Constraint solver failed to calculate an optimized roster.");
+      }
+
+      if (status === "PENDING") {
+        throw new Error("Schedule generation timed out. Please try again with relaxed constraints.");
+      }
       
       // Fetch shifts matching this range
       const shifts = await api.getShifts(startStr, endStr) || [];

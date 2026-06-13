@@ -64,4 +64,4 @@ app:
     secret: dGhpc2lzYW11bHRpcGxlcmVnaW9uYWx3b3JrZm9yY2VvcHRpbWl6YXRpb25zZWN1cml0eWtleTI1NmJpdHM=
     expiration-ms: 86400000 # 24 hours
   ml-service:
-    url: http://localhost:8000
+    url: ${ML_SERVICE_URL:http://localhost:8000}
