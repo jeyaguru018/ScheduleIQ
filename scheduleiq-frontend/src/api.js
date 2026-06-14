@@ -9,25 +9,25 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 // ── Token Management ──────────────────────────────────────────────────────────
 
 export function getToken() {
-  return localStorage.getItem('scheduleiq_token');
+  return sessionStorage.getItem('scheduleiq_token');
 }
 
 export function setToken(token) {
-  localStorage.setItem('scheduleiq_token', token);
+  sessionStorage.setItem('scheduleiq_token', token);
 }
 
 export function clearToken() {
-  localStorage.removeItem('scheduleiq_token');
-  localStorage.removeItem('scheduleiq_user');
+  sessionStorage.removeItem('scheduleiq_token');
+  sessionStorage.removeItem('scheduleiq_user');
 }
 
 export function getUser() {
-  const raw = localStorage.getItem('scheduleiq_user');
+  const raw = sessionStorage.getItem('scheduleiq_user');
   return raw ? JSON.parse(raw) : null;
 }
 
 export function setUser(user) {
-  localStorage.setItem('scheduleiq_user', JSON.stringify(user));
+  sessionStorage.setItem('scheduleiq_user', JSON.stringify(user));
 }
 
 // ── Core Fetch Wrapper ────────────────────────────────────────────────────────
@@ -78,6 +78,14 @@ export async function register(payload) {
   setToken(data.token);
   setUser({ name: data.name, role: data.role, employeeId: data.employeeId });
   return data;
+}
+
+export async function createEmployee(payload) {
+  // Call register but do NOT overwrite session token
+  return apiFetch('/api/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
 export function logout() {

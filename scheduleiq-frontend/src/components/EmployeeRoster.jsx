@@ -51,8 +51,11 @@ export function EmployeeRoster() {
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.register(formData);
+      await api.createEmployee(formData);
       setIsAddModalOpen(false);
+      setFormData({
+        name: '', email: '', password: '', role: 'CASHIER', baseHourlyRate: '', maxHoursPerWeek: 40
+      });
       showToast("Employee added successfully!");
       loadData();
     } catch (e) {
