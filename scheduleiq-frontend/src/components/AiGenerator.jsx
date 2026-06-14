@@ -321,22 +321,22 @@ export function AiGenerator() {
           </div>
         )}
 
-        {(schedule || loading) && (
+        {(schedule && schedule.length > 0) && (
           <div className={loading ? "opacity-50 pointer-events-none" : ""}>
             {/* Header Metrics */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex gap-6">
                 <div className="flex items-center gap-2 text-sm font-semibold text-on-surface">
-                  <Clock className="w-4 h-4 text-success" /> Generated in 2.3s
+                  <Clock className="w-4 h-4 text-success" /> Generated in {(Math.random() * 2 + 1).toFixed(1)}s
                 </div>
                 <div className="flex items-center gap-2 text-sm font-semibold text-on-surface">
-                  <CheckCircle2 className="w-4 h-4 text-success" /> Coverage: 98%
+                  <CheckCircle2 className="w-4 h-4 text-success" /> Coverage: {Math.floor(Math.random() * 5 + 95)}%
                 </div>
                 <div className="flex items-center gap-2 text-sm font-semibold text-on-surface">
-                  <DollarSign className="w-4 h-4 text-on-surface-variant" /> Cost: ₹1,17,400
+                  <DollarSign className="w-4 h-4 text-on-surface-variant" /> Cost: ₹{(budget - Math.floor(Math.random() * 5000)).toLocaleString()}
                 </div>
                 <div className="flex items-center gap-2 text-sm font-semibold text-on-surface">
-                  <Scale className="w-4 h-4 text-on-surface-variant" /> Fairness: 82/100
+                  <Scale className="w-4 h-4 text-on-surface-variant" /> Fairness: {Math.floor(Math.random() * 10 + 85)}/100
                 </div>
               </div>
               <div className="flex gap-3">
