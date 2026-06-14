@@ -51,6 +51,17 @@ function App() {
     const name = params.get('name');
     const employeeId = params.get('employeeId');
 
+    // Check if the page is being opened freshly (not a reload or back/forward)
+    // and we're not currently doing a Google OAuth redirection.
+    const navEntries = performance.getEntriesByType("navigation");
+    const isNavigate = navEntries.length > 0 && navEntries[0].type === 'navigate';
+    const isGoogleRedirect = !!(token && role && name);
+
+    if (isNavigate && !isGoogleRedirect) {
+      // Clear token and user on fresh navigation to require log in
+      api.clearToken();
+    }
+
     if (token && role && name) {
       api.setToken(token);
       const userData = { name, role, employeeId: employeeId ? parseInt(employeeId) : null };
