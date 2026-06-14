@@ -208,6 +208,7 @@ export function AlertCenter() {
                 </div>
 
               </Card>
+            );
           })}
         </div>
 
