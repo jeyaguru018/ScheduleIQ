@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './common/Card';
 import { Button } from './common/Button';
 import { CalendarDays, Zap, SunMedium, Building2, TrendingUp } from 'lucide-react';
