@@ -7,7 +7,6 @@ import com.scheduleiq.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -23,7 +22,6 @@ public class AutoSchedulerService {
     private final JobStatusRepository jobStatusRepository;
 
     @Async // Runs asynchronously in the background task executor!
-    @Transactional
     public void generateOptimalRoster(String jobId, LocalDateTime weekStart, LocalDateTime weekEnd, double budgetCap) {
         JobStatus job = JobStatus.builder()
                 .jobId(jobId)
