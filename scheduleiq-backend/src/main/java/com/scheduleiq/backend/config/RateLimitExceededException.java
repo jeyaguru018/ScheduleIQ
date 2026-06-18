@@ -1,4 +1,4 @@
-﻿package com.scheduleiq.backend.config;
+package com.scheduleiq.backend.config;
 
 /**
  * Thrown when a client exceeds the rate limit for a protected endpoint.

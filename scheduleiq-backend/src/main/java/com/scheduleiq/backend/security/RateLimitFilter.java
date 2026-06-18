@@ -1,4 +1,4 @@
-﻿package com.scheduleiq.backend.security;
+package com.scheduleiq.backend.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.bucket4j.Bandwidth;

@@ -1,4 +1,4 @@
-﻿package com.scheduleiq.backend.config;
+package com.scheduleiq.backend.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.cache.CacheManager;
