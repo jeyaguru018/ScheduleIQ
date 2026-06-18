@@ -16,7 +16,8 @@ import {
   Edit3, 
   Send,
   Plus,
-  Trash2
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import * as api from '../api';
 import { useToast } from './common/Toast';
