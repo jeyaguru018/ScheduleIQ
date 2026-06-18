@@ -5,6 +5,7 @@ import com.google.ortools.sat.*;
 import com.scheduleiq.backend.model.*;
 import com.scheduleiq.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import java.time.Duration;
@@ -14,7 +15,9 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AutoSchedulerService {
+
 
     private final EmployeeRepository employeeRepository;
     private final ShiftRepository shiftRepository;
@@ -133,15 +136,17 @@ public class AutoSchedulerService {
             jobStatusRepository.save(Objects.requireNonNull(job));
 
             // 4. Objective Formulation (Soft constraints)
-            // Objective: Maximize fairness score and minimize labor costs
+            // Objective: Maximize coverage while minimizing labor costs
             LinearExprBuilder objective = LinearExpr.newBuilder();
             for (Employee emp : employees) {
                 for (Shift shift : openShifts) {
                     double durationHours = Duration.between(shift.getStartTime(), shift.getEndTime()).toMinutes() / 60.0;
                     long cost = (long) (durationHours * emp.getBaseHourlyRate());
                     
-                    // Standard cost minimization combined with keeping highly reliable employees active
-                    long weight = (long) (emp.getReliabilityScore() * 100 - cost);
+                    // Massive base reward (100,000) to ensure shifts get assigned,
+                    // minus cost to prefer cheaper employees,
+                    // plus reliability bonus to prefer reliable employees.
+                    long weight = 100000L - cost + (long)(emp.getReliabilityScore() * 1000);
                     objective.addTerm(x.get(emp.getId()).get(shift.getId()), weight);
                 }
             }

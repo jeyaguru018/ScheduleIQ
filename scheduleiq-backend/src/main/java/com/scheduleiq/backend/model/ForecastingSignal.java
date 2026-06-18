@@ -6,7 +6,13 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "forecasting_signals")
+@Table(
+    name = "forecasting_signals",
+    indexes = {
+        // Primary query: always fetching signals by timestamp range for forecasting
+        @Index(name = "idx_forecasting_timestamp", columnList = "timestamp")
+    }
+)
 @Data
 @Builder
 @NoArgsConstructor

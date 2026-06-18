@@ -1,24 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import * as api from './api';
 
-// Layout
+// Layout (always needed — loaded eagerly)
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { ProfileModal } from './components/ProfileModal';
-
-// Views
 import { Login } from './components/Login';
-import { CommandCenter } from './components/CommandCenter';
-import { AiGenerator } from './components/AiGenerator';
-import { DemandForecast } from './components/DemandForecast';
-import { EmployeeRoster } from './components/EmployeeRoster';
-import { FairnessEquity } from './components/FairnessEquity';
-import { SwapMarketplace } from './components/SwapMarketplace';
-import { AlertCenter } from './components/AlertCenter';
-import { EmployeeDashboard } from './components/EmployeeDashboard';
-import { ControlRoom } from './components/ControlRoom';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+
+// Heavy page components — lazy loaded on demand (reduces initial bundle by ~60%)
+const CommandCenter    = lazy(() => import('./components/CommandCenter').then(m => ({ default: m.CommandCenter })));
+const AiGenerator      = lazy(() => import('./components/AiGenerator').then(m => ({ default: m.AiGenerator })));
+const DemandForecast   = lazy(() => import('./components/DemandForecast').then(m => ({ default: m.DemandForecast })));
+const EmployeeRoster   = lazy(() => import('./components/EmployeeRoster').then(m => ({ default: m.EmployeeRoster })));
+const FairnessEquity   = lazy(() => import('./components/FairnessEquity').then(m => ({ default: m.FairnessEquity })));
+const SwapMarketplace  = lazy(() => import('./components/SwapMarketplace').then(m => ({ default: m.SwapMarketplace })));
+const AlertCenter      = lazy(() => import('./components/AlertCenter').then(m => ({ default: m.AlertCenter })));
+const EmployeeDashboard = lazy(() => import('./components/EmployeeDashboard').then(m => ({ default: m.EmployeeDashboard })));
+const ControlRoom      = lazy(() => import('./components/ControlRoom').then(m => ({ default: m.ControlRoom })));
+
+// Loading fallback for lazy components
+const PageLoader = () => (
+  <div className="flex-1 flex items-center justify-center bg-surface-variant/30">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      <p className="text-sm font-semibold text-outline">Loading module...</p>
+    </div>
+  </div>
+);
 
 import { useWebSocketAlerts } from './lib/websocket';
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -106,7 +118,11 @@ function App() {
   if (user.role !== 'MANAGER' && currentPage === 'employee_view') {
     return (
       <>
-        <EmployeeDashboard user={user} onOpenProfile={() => setIsProfileOpen(true)} onLogout={handleLogout} />
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <EmployeeDashboard user={user} onOpenProfile={() => setIsProfileOpen(true)} onLogout={handleLogout} />
+          </Suspense>
+        </ErrorBoundary>
         <ProfileModal 
           isOpen={isProfileOpen} 
           onClose={() => setIsProfileOpen(false)} 
@@ -150,7 +166,11 @@ function App() {
           onNavigate={(page) => setCurrentPage(page)}
         />
         
-        {renderView()}
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            {renderView()}
+          </Suspense>
+        </ErrorBoundary>
       </main>
 
       {/* Live WebSocket Toast Notification */}

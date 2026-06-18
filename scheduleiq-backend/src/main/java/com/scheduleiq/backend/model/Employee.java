@@ -5,9 +5,22 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "employees")
+@EntityListeners(AuditingEntityListener.class)
+@Table(
+    name = "employees",
+    indexes = {
+        // Email is already UNIQUE via @Column but we add a named index for clarity in monitoring
+        @Index(name = "idx_employees_email", columnList = "email", unique = true),
+        // Role index — used in all roster filtering queries
+        @Index(name = "idx_employees_role", columnList = "role")
+    }
+)
 @Data
 @Builder
 @NoArgsConstructor
@@ -56,4 +69,12 @@ public class Employee {
 
     @Version // CRITICAL: Protects against concurrent modifications and race conditions!
     private Long version;
+
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

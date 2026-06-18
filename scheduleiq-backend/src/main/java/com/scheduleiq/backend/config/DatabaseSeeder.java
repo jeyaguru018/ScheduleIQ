@@ -24,6 +24,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final LeaveRequestRepository leaveRequestRepository;
     private final SwapRequestRepository swapRequestRepository;
     private final JobStatusRepository jobStatusRepository;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) throws Exception {
@@ -31,13 +32,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         if (!marker.exists()) {
             System.out.println(">>> First run after update: Performing complete database wipe...");
             try {
-                swapRequestRepository.deleteAllInBatch();
-                leaveRequestRepository.deleteAllInBatch();
-                shiftRepository.deleteAllInBatch();
-                availabilityRepository.deleteAllInBatch();
-                employeeRepository.deleteAllInBatch();
-                jobStatusRepository.deleteAllInBatch();
-                forecastingSignalRepository.deleteAllInBatch();
+                jdbcTemplate.execute("TRUNCATE TABLE swap_requests, leave_requests, shifts, availabilities, employees, job_statuses, forecasting_signals RESTART IDENTITY CASCADE");
                 
                 // Write marker file
                 marker.createNewFile();

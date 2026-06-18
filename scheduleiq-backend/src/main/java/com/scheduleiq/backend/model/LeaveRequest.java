@@ -7,7 +7,14 @@ import lombok.*;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "leave_requests")
+@Table(
+    name = "leave_requests",
+    indexes = {
+        // Solver queries leaves by date range — this index is critical
+        @Index(name = "idx_leave_date", columnList = "leave_date"),
+        @Index(name = "idx_leave_employee_id", columnList = "employee_id")
+    }
+)
 @Data
 @Builder
 @NoArgsConstructor

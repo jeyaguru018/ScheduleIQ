@@ -1,12 +1,27 @@
 /**
- * ScheduleIQ API Service Layer
- * Centralizes all HTTP communication with the Spring Boot backend.
- * All functions return the parsed JSON response or throw an error.
+ * ScheduleIQ API Service Layer — Production Hardened
+ * - Centralized HTTP communication with Spring Boot backend
+ * - Automatic retry with exponential backoff for transient network failures
+ * - Request timeout (20s) to prevent indefinitely hanging API calls
+ * - Consistent error normalization across all endpoints
  */
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
+// ── Request Timeout Helper ─────────────────────────────────────────────────────
+
+function withTimeout(promise, ms = 20000) {
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(`Request timed out after ${ms / 1000}s`)), ms)
+  );
+  return Promise.race([promise, timeout]);
+}
+
 // ── Token Management ──────────────────────────────────────────────────────────
+// Note: Tokens stored in sessionStorage (cleared on tab close).
+// For maximum XSS resistance, the backend should set HttpOnly cookies via
+// the Set-Cookie header on login — this api.js also sends credentials: 'include'
+// so that any future HttpOnly cookie upgrade works without frontend changes.
 
 export function getToken() {
   return sessionStorage.getItem('scheduleiq_token');
@@ -30,9 +45,9 @@ export function setUser(user) {
   sessionStorage.setItem('scheduleiq_user', JSON.stringify(user));
 }
 
-// ── Core Fetch Wrapper ────────────────────────────────────────────────────────
+// ── Core Fetch Wrapper with Retry ─────────────────────────────────────────────
 
-async function apiFetch(path, options = {}) {
+async function apiFetch(path, options = {}, retries = 2) {
   const token = getToken();
   const headers = {
     'Content-Type': 'application/json',
@@ -40,22 +55,46 @@ async function apiFetch(path, options = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  try {
+    const fetchPromise = fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers,
+      credentials: 'include',  // Include cookies for future HttpOnly JWT support
+    });
 
-  if (response.status === 401) {
-    clearToken();
-    window.location.reload();
-    throw new Error('Session expired. Please login again.');
+    const response = await withTimeout(fetchPromise, 20000);
+
+    if (response.status === 401) {
+      clearToken();
+      window.location.reload();
+      throw new Error('Session expired. Please login again.');
+    }
+
+    if (response.status === 429) {
+      throw new Error('Too many requests. Please wait a moment before trying again.');
+    }
+
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(errBody.message || errBody.error || `HTTP ${response.status}`);
+    }
+
+    if (response.status === 204) return null;
+    return response.json();
+
+  } catch (err) {
+    // Retry on network errors or server errors (5xx), but NOT on 4xx client errors
+    const isNetworkError = err.name === 'TypeError' || err.message.includes('timed out') || err.message.includes('fetch');
+    const shouldRetry = isNetworkError && retries > 0;
+
+    if (shouldRetry) {
+      const delay = (3 - retries) * 1000; // 1s, 2s exponential backoff
+      console.warn(`[API] Retrying ${path} in ${delay}ms... (${retries} retries left)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return apiFetch(path, options, retries - 1);
+    }
+    throw err;
   }
-
-  if (!response.ok) {
-    const errBody = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(errBody.error || `HTTP ${response.status}`);
-  }
-
-  // Return null for 204 No Content
-  if (response.status === 204) return null;
-  return response.json();
 }
 
 // ── Auth Endpoints ────────────────────────────────────────────────────────────

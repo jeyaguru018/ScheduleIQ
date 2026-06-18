@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ScheduleIQ Structured Logging Configuration
+  - Console: Human-readable colored output for local development
+  - File: JSON-structured rolling logs for production (parse with ELK, Datadog, etc.)
+  - Max 30 days retention / 500MB cap — auto-purges old logs
+-->
+<configuration>
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="scheduleiq"/>
+
+    <!-- ── Console Appender (Development) ──────────────────────────────────── -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [%cyan(%thread)] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ── Rolling File Appender (Production) ──────────────────────────────── -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/scheduleiq.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- Roll daily; keep 30 days; max 500MB total -->
+            <fileNamePattern>logs/scheduleiq.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <!-- Structured format: timestamp | level | thread | logger | message -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%thread] [%logger{50}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ── Logger Levels ────────────────────────────────────────────────────── -->
+    <!-- Suppress chatty Hibernate SQL logs in production -->
+    <logger name="org.hibernate.SQL" level="WARN"/>
+    <logger name="org.hibernate.type.descriptor.sql" level="WARN"/>
+
+    <!-- Spring Security debug can be too noisy; keep at WARN in prod -->
+    <logger name="org.springframework.security" level="WARN"/>
+
+    <!-- Our own code: INFO in production, DEBUG overridden via env var -->
+    <logger name="com.scheduleiq" level="INFO"/>
+
+    <!-- ── Root (catch-all) ─────────────────────────────────────────────────── -->
+    <springProfile name="!prod">
+        <!-- Development: console only -->
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="prod">
+        <!-- Production: both console and rolling file -->
+        <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </root>
+        <logger name="com.scheduleiq" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </logger>
+    </springProfile>
+</configuration>

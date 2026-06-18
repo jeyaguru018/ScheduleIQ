@@ -1,5 +1,9 @@
 server:
   port: 8080
+  # Graceful shutdown: waits up to 30s for in-flight requests to complete
+  shutdown: graceful
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 spring:
   application:
@@ -12,16 +16,36 @@ spring:
     # NOTE: If your local PostgreSQL has a different password, change it below!
     password: ${SPRING_DATASOURCE_PASSWORD:#Jeyaguru064}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      # Connection pool tuned for 10,000-user concurrent workloads
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000      # 5 minutes
+      connection-timeout: 20000 # 20 seconds — fail fast, don't queue forever
+      max-lifetime: 1800000     # 30 minutes — recycle connections to prevent stale handles
+      pool-name: ScheduleIQ-Pool
 
   jpa:
     hibernate:
       # Auto-generates and updates the database tables based on our Java Classes automatically
       ddl-auto: update
-    show-sql: true
+    show-sql: false  # Disabled in production — too noisy; use structured logs instead
+    open-in-view: false  # Prevent open-in-view anti-pattern; forces explicit transactions
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 25       # Bulk inserts in batches (critical for seeder performance)
+          fetch_size: 50       # Cursor-based fetching for large result sets
+        order_inserts: true
+        order_updates: true
+
+  # Cache configuration: Caffeine in-memory cache
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=300s  # 5-minute TTL, max 500 entries
 
   # SMTP Mail settings using Gmail App Password
   mail:
@@ -68,3 +92,32 @@ app:
     expiration-ms: 86400000 # 24 hours
   ml-service:
     url: ${ML_SERVICE_URL:http://localhost:8000}
+
+# Actuator: Production health, metrics, and Prometheus exposure
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized  # Full details only to authenticated calls
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: scheduleiq-backend
+    export:
+      prometheus:
+        enabled: true
+  info:
+    env:
+      enabled: true
+
+# Application info for /actuator/info
+info:
+  app:
+    name: ScheduleIQ Backend
+    version: 1.0.0
+    description: Intelligent Workforce Planning API

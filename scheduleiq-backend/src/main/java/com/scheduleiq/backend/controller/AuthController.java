@@ -5,6 +5,8 @@ import com.scheduleiq.backend.model.Role;
 import com.scheduleiq.backend.repository.EmployeeRepository;
 import com.scheduleiq.backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,6 +15,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -20,7 +23,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
+@Slf4j
+
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -44,6 +48,7 @@ public class AuthController {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, password));
         } catch (AuthenticationException e) {
+            log.warn("Failed login attempt for email: [{}]", email);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Invalid email or password."));
         }
@@ -56,6 +61,7 @@ public class AuthController {
                 Map.of("role", employee.getRole().name(), "name", employee.getName()),
                 userDetails);
 
+        log.info("Successful login for employee [{}] role=[{}]", employee.getId(), employee.getRole());
         return ResponseEntity.ok(Map.of(
                 "token", token,
                 "role", employee.getRole().name(),
@@ -69,6 +75,8 @@ public class AuthController {
      * Body: { "name": "...", "email": "...", "password": "...", "role": "MANAGER|CASHIER|STOCKER|DELIVERY", "baseHourlyRate": 450, "maxHoursPerWeek": 40 }
      */
     @PostMapping("/register")
+    @Transactional
+    @CacheEvict(value = "employees", allEntries = true)
     public ResponseEntity<?> register(@RequestBody Map<String, Object> request) {
         String email = (String) request.get("email");
 
@@ -87,12 +95,13 @@ public class AuthController {
                 .build();
 
         employeeRepository.save(employee);
+        log.info("New employee registered: id=[{}] role=[{}] email=[{}]", employee.getId(), employee.getRole(), email);
 
-        // Send welcome/onboarding email asynchronously or via safe block so it doesn't block response on error
+        // Send welcome/onboarding email asynchronously
         try {
             emailNotificationService.sendEmployeeOnboardingEmail(employee.getName(), employee.getEmail());
         } catch (Exception e) {
-            System.err.println("SMTP Mail sending failed: " + e.getMessage());
+            log.warn("SMTP onboarding email failed for [{}]: {}", email, e.getMessage());
         }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);

@@ -47,14 +47,43 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     userDetails
             );
             
-            String redirectUrl = "http://localhost:3000/oauth2/callback?token=" + token 
+            String redirectUrl = "http://localhost:5173/oauth2/callback?token=" + token 
                     + "&role=" + employee.getRole().name()
                     + "&name=" + URLEncoder.encode(employee.getName(), StandardCharsets.UTF_8)
                     + "&employeeId=" + employee.getId();
             
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+        } else if (employeeRepository.count() == 0) {
+            Employee manager = Employee.builder()
+                    .name(oAuth2User.getAttribute("name") != null ? oAuth2User.getAttribute("name") : "Manager")
+                    .email(email)
+                    .password("") // Managed by Google
+                    .role(com.scheduleiq.backend.model.Role.MANAGER)
+                    .baseHourlyRate(250.0)
+                    .maxHoursPerWeek(48)
+                    .reliabilityScore(1.0)
+                    .fairnessScore(100)
+                    .build();
+            employeeRepository.save(manager);
+            
+            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+            String token = jwtService.generateToken(
+                    Map.of(
+                            "role", manager.getRole().name(),
+                            "name", manager.getName(),
+                            "employeeId", manager.getId()
+                    ),
+                    userDetails
+            );
+            
+            String redirectUrl = "http://localhost:5173/oauth2/callback?token=" + token 
+                    + "&role=" + manager.getRole().name()
+                    + "&name=" + URLEncoder.encode(manager.getName(), StandardCharsets.UTF_8)
+                    + "&employeeId=" + manager.getId();
+            
+            getRedirectStrategy().sendRedirect(request, response, redirectUrl);
         } else {
-            String redirectUrl = "http://localhost:3000/login?error=email_not_approved&email=" 
+            String redirectUrl = "http://localhost:5173/login?error=email_not_approved&email=" 
                     + URLEncoder.encode(email != null ? email : "", StandardCharsets.UTF_8);
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
         }

@@ -3,9 +3,14 @@ package com.scheduleiq.backend.service.forecasting;
 import com.scheduleiq.backend.model.*;
 import com.scheduleiq.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -17,6 +22,7 @@ import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MlIntegrationService {
 
     private final ShiftRepository shiftRepository;
@@ -28,6 +34,11 @@ public class MlIntegrationService {
     @Value("${app.ml-service.url:http://localhost:8000}")
     private String mlServiceUrl;
 
+    @Retryable(
+        retryFor = RestClientException.class,
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 1000, multiplier = 2.0)
+    )
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> predictDemand(LocalDateTime start, LocalDateTime end) {
         // Fetch last 30 days of historical data
@@ -36,7 +47,7 @@ public class MlIntegrationService {
         List<ForecastingSignal> history = forecastingSignalRepository.findByTimestampBetweenOrderByTimestampAsc(historyStart, historyEnd);
 
         if (history.isEmpty()) {
-            System.out.println("No history found in database for demand prediction, returning empty predictions");
+            log.warn("No forecasting history found in database — returning empty predictions");
             return Collections.emptyList();
         }
 

@@ -3,10 +3,24 @@ package com.scheduleiq.backend.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "shifts")
+@EntityListeners(AuditingEntityListener.class)
+@Table(
+    name = "shifts",
+    indexes = {
+        // Composite index: the primary query pattern is always date-range lookups
+        @Index(name = "idx_shifts_start_end", columnList = "start_time, end_time"),
+        // Single column index for employee-specific shift queries
+        @Index(name = "idx_shifts_employee_id", columnList = "employee_id"),
+        // Status index for filtering DRAFT/PUBLISHED shifts efficiently
+        @Index(name = "idx_shifts_status", columnList = "status")
+    }
+)
 @Data
 @Builder
 @NoArgsConstructor
@@ -56,4 +70,12 @@ public class Shift {
 
     @Version // CRITICAL: Guards against double-allocation or race swaps
     private Long version;
+
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }
