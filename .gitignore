@@ -61,3 +61,6 @@ scheduleiq-backend/jdk-21.zip
 # ── Models (large binary ML artifacts) ──────────────────────────
 scheduleiq-ml-service/models/*.pkl
 scheduleiq-ml-service/models/*.joblib
+
+# ── Marker files ─────────────────────────────────────────────────
+.db-wiped

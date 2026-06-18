@@ -16,6 +16,7 @@ import { FairnessEquity } from './components/FairnessEquity';
 import { SwapMarketplace } from './components/SwapMarketplace';
 import { AlertCenter } from './components/AlertCenter';
 import { EmployeeDashboard } from './components/EmployeeDashboard';
+import { ControlRoom } from './components/ControlRoom';
 
 import { useWebSocketAlerts } from './lib/websocket';
 
@@ -120,6 +121,7 @@ function App() {
   const renderView = () => {
     switch (currentPage) {
       case 'dashboard': return <CommandCenter />;
+      case 'control_room': return <ControlRoom />;
       case 'ai_generator': return <AiGenerator />;
       case 'demand_forecast': return <DemandForecast />;
       case 'roster': return <EmployeeRoster />;

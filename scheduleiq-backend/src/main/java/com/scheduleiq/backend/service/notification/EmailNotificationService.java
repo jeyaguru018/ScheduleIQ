@@ -18,22 +18,24 @@ public class EmailNotificationService {
     private final JavaMailSender mailSender;
 
     public void sendEmail(String to, String subject, String contentHtml) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            helper.setFrom("jeyaguru018@gmail.com");
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(contentHtml, true);
-            
-            mailSender.send(message);
-            log.info("Email successfully sent to {}", to);
-        } catch (MessagingException e) {
-            log.error("Failed to send email to {}: {}", to, e.getMessage());
-        } catch (Exception e) {
-            log.error("General error sending email to {}: {}", to, e.getMessage());
-        }
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                
+                helper.setFrom("jeyaguru018@gmail.com");
+                helper.setTo(to);
+                helper.setSubject(subject);
+                helper.setText(contentHtml, true);
+                
+                mailSender.send(message);
+                log.info("Email successfully sent to {}", to);
+            } catch (MessagingException e) {
+                log.error("Failed to send email to {}: {}", to, e.getMessage());
+            } catch (Exception e) {
+                log.error("General error sending email to {}: {}", to, e.getMessage());
+            }
+        });
     }
 
     public void sendEmployeeOnboardingEmail(String name, String email) {

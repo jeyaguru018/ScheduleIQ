@@ -179,6 +179,70 @@ export function AiGenerator() {
     }
   };
 
+  const getComplianceViolations = () => {
+    if (!schedule) return [];
+    const violations = [];
+    
+    schedule.forEach(row => {
+      let totalHours = 0;
+      row.days.forEach((dayShift, index) => {
+        if (!dayShift) return;
+        const parts = dayShift.time.split(' - ');
+        if (parts.length === 2) {
+          const [sh, sm] = parts[0].split(':').map(Number);
+          const [eh, em] = parts[1].split(':').map(Number);
+          let diff = eh - sh;
+          if (diff < 0) diff += 24;
+          totalHours += diff;
+          
+          const nextDayShift = row.days[index + 1];
+          if (nextDayShift) {
+            const nextParts = nextDayShift.time.split(' - ');
+            if (nextParts.length === 2) {
+              const [nsh, nsm] = nextParts[0].split(':').map(Number);
+              let endHour = eh;
+              let nextStartHour = nsh;
+              let restHours = nextStartHour - endHour;
+              if (restHours < 0) restHours += 24;
+              
+              if (eh >= 14 && nsh <= 9 && restHours < 11) {
+                violations.push({
+                  type: 'clopening',
+                  employee: row.employeeName,
+                  message: `⚠️ Rest Period: ${row.employeeName} works late shift on ${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index]} and early shift on ${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index + 1]} (${restHours}h rest)`
+                });
+              }
+            }
+          }
+        }
+      });
+      
+      if (totalHours > 40) {
+        violations.push({
+          type: 'overtime',
+          employee: row.employeeName,
+          message: `⚠️ Overtime: ${row.employeeName} is scheduled for ${totalHours} hours (cap: 40h)`
+        });
+      }
+    });
+    
+    return violations;
+  };
+
+  const getDailyCoverage = (dayIdx) => {
+    if (!schedule) return { pct: 100, status: 'optimal', label: 'Optimal Staffing' };
+    let assigned = 0;
+    schedule.forEach(row => {
+      if (row.days[dayIdx]) assigned++;
+    });
+    // Target staffing level: 2 shifts per day
+    const target = 2; 
+    const pct = Math.round((assigned / target) * 100);
+    if (assigned < target) return { pct, status: 'understaffed', label: `${assigned}/${target} Staff` };
+    if (assigned > target + 1) return { pct, status: 'overbudget', label: `${assigned}/${target} Staff` };
+    return { pct: 100, status: 'optimal', label: 'Optimal Staffing' };
+  };
+
   // Helper for Toggle Switch
   const Toggle = ({ label, checked, onChange }) => (
     <div className="flex items-center justify-between py-3">
@@ -359,63 +423,124 @@ export function AiGenerator() {
               </div>
             </div>
 
-            {/* Schedule Grid */}
-            <Card className="shadow-sm border-outline-variant overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-outline-variant bg-surface-variant/30">
-                      <th className="p-4 font-bold text-xs text-outline uppercase tracking-wider w-64 border-r border-outline-variant">Employee</th>
-                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                        <th key={day} className="p-4 font-bold text-xs text-center text-on-surface uppercase tracking-wider min-w-[140px] border-r border-outline-variant">{day}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline-variant">
-                    {schedule && schedule.map(row => (
-                      <tr key={row.employeeName} className="hover:bg-surface-variant/10">
-                        <td className="p-4 border-r border-outline-variant flex items-center gap-3">
-                          <Avatar name={row.employeeName} size="md" />
-                          <div>
-                            <div className="font-bold text-sm text-on-surface">{row.employeeName}</div>
-                            <div className="text-xs font-semibold text-on-surface-variant">{row.role}</div>
-                          </div>
-                        </td>
-                        {row.days.map((dayShift, i) => (
-                          <td key={i} className="p-2 border-r border-outline-variant">
-                            {dayShift ? (
-                              <div className="bg-[#14b8a6]/10 border-l-4 border-[#14b8a6] p-2 rounded-r relative group">
-                                <div className="font-bold text-[#0d9488] text-xs">{dayShift.time}</div>
-                                <div className="text-[9px] font-bold text-on-surface-variant uppercase mt-0.5">{dayShift.task}</div>
-                                {isEditing && (
-                                  <button 
-                                    className="absolute -top-1.5 -right-1.5 bg-error text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => alert("Shift removed. AI solver will adjust coverage.")}
-                                  >
-                                    ✕
-                                  </button>
-                                )}
+            {/* Split layout for Grid and Compliance */}
+            <div className="flex flex-col xl:flex-row gap-6 mt-4 items-start">
+              <div className="flex-grow xl:flex-1 min-w-0 w-full">
+                {/* Schedule Grid */}
+                <Card className="shadow-sm border-outline-variant overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-outline-variant bg-surface-variant/30">
+                          <th className="p-4 font-bold text-xs text-outline uppercase tracking-wider w-64 border-r border-outline-variant">Employee</th>
+                          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => {
+                            const cov = getDailyCoverage(idx);
+                            return (
+                              <th key={day} className="p-4 font-bold text-xs text-center text-on-surface uppercase tracking-wider min-w-[140px] border-r border-outline-variant">
+                                <div>{day}</div>
+                                <div className="flex items-center justify-center gap-1.5 mt-1 normal-case font-normal text-[10px]">
+                                  <span className={`w-1.5 h-1.5 rounded-full ${
+                                    cov.status === 'understaffed' ? 'bg-[#ef4444]' :
+                                    cov.status === 'overbudget' ? 'bg-[#f59e0b]' : 'bg-[#10b981]'
+                                  }`} />
+                                  <span className="text-outline">{cov.label}</span>
+                                </div>
+                              </th>
+                            );
+                          })}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-outline-variant">
+                        {schedule && schedule.map(row => (
+                          <tr key={row.employeeName} className="hover:bg-surface-variant/10">
+                            <td className="p-4 border-r border-outline-variant flex items-center gap-3">
+                              <Avatar name={row.employeeName} size="md" />
+                              <div>
+                                <div className="font-bold text-sm text-on-surface">{row.employeeName}</div>
+                                <div className="text-xs font-semibold text-on-surface-variant">{row.role}</div>
                               </div>
-                            ) : (
-                              isEditing ? (
-                                <button 
-                                  className="w-full py-2 border border-dashed border-outline-variant hover:border-primary hover:bg-primary/5 rounded text-[10px] font-bold text-outline hover:text-primary transition-all"
-                                  onClick={() => alert("Add shift window opened. Assigning cashier...")}
-                                >
-                                  + Add Shift
-                                </button>
-                              ) : (
-                                <div className="h-10"></div>
-                              )
-                            )}
-                          </td>
+                            </td>
+                            {row.days.map((dayShift, i) => (
+                              <td key={i} className="p-2 border-r border-outline-variant">
+                                {dayShift ? (
+                                  <div className="bg-[#14b8a6]/10 border-l-4 border-[#14b8a6] p-2 rounded-r relative group">
+                                    <div className="font-bold text-[#0d9488] text-xs">{dayShift.time}</div>
+                                    <div className="text-[9px] font-bold text-on-surface-variant uppercase mt-0.5">{dayShift.task}</div>
+                                    {isEditing && (
+                                      <button 
+                                        className="absolute -top-1.5 -right-1.5 bg-error text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => alert("Shift removed. AI solver will adjust coverage.")}
+                                      >
+                                        ✕
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  isEditing ? (
+                                    <button 
+                                      className="w-full py-2 border border-dashed border-outline-variant hover:border-primary hover:bg-primary/5 rounded text-[10px] font-bold text-outline hover:text-primary transition-all"
+                                      onClick={() => alert("Add shift window opened. Assigning cashier...")}
+                                    >
+                                      + Add Shift
+                                    </button>
+                                  ) : (
+                                    <div className="h-10"></div>
+                                  )
+                                )}
+                              </td>
+                            ))}
+                          </tr>
                         ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
               </div>
-            </Card>
+
+              {/* Compliance Checker Panel */}
+              <div className="w-full xl:w-80 shrink-0">
+                <Card className="p-5 border-outline-variant shadow-sm bg-white space-y-4">
+                  <div className="border-b border-outline-variant pb-3">
+                    <h3 className="text-base font-bold text-on-surface flex items-center gap-2">
+                      <Scale className="w-4 h-4 text-[#1e1a8a]" />
+                      Labor Code Compliance
+                    </h3>
+                    <p className="text-xs text-on-surface-variant mt-0.5">Real-time check against regulatory rules.</p>
+                  </div>
+                  
+                  {/* Compliance Score */}
+                  <div className="flex items-center gap-4 bg-[#fafbfc] p-3 rounded-lg border border-outline-variant/50">
+                    <div className="w-12 h-12 rounded-full border-4 border-[#14b8a6] flex items-center justify-center text-sm font-extrabold text-[#0d9488] bg-[#14b8a6]/5">
+                      {Math.max(0, 100 - getComplianceViolations().length * 10)}%
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-on-surface">Compliance Score</div>
+                      <div className="text-xs text-on-surface-variant font-medium">
+                        {getComplianceViolations().length === 0 ? 'Fully compliant roster' : `${getComplianceViolations().length} infractions detected`}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Violations List */}
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                    {getComplianceViolations().length === 0 ? (
+                      <div className="p-4 bg-[#f0fdf4] border border-[#b9f6ca] rounded-lg text-center">
+                        <CheckCircle2 className="w-8 h-8 text-[#14b8a6] mx-auto mb-2" />
+                        <div className="text-xs font-bold text-[#15803d]">All Clear</div>
+                        <p className="text-[10px] text-[#1b5e20] mt-1">This schedule adheres to all rest period and weekly maximum hour guidelines.</p>
+                      </div>
+                    ) : (
+                      getComplianceViolations().map((v, idx) => (
+                        <div key={idx} className="p-3 bg-[#fff8e1] border border-[#ffe082] rounded-lg text-xs font-semibold text-[#7f5f00] flex gap-2">
+                          <AlertTriangle className="w-4 h-4 shrink-0 text-[#f59e0b] mt-0.5" />
+                          <p className="leading-relaxed">{v.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </Card>
+              </div>
+            </div>
           </div>
         )}
       </div>

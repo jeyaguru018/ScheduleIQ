@@ -12,6 +12,10 @@ export function SwapMarketplace() {
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
 
+  const [selectedSwapForBackup, setSelectedSwapForBackup] = useState(null);
+  const [backupRecommendations, setBackupRecommendations] = useState([]);
+  const [loadingBackups, setLoadingBackups] = useState(false);
+
   useEffect(() => {
     loadSwaps();
   }, []);
@@ -33,6 +37,30 @@ export function SwapMarketplace() {
       setSwaps([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadBackupsForShift = async (shiftId) => {
+    setLoadingBackups(true);
+    try {
+      const data = await api.getBackupWorkers(shiftId);
+      setBackupRecommendations(data || []);
+    } catch (e) {
+      showToast("Failed to load backups: " + e.message, 'error');
+    } finally {
+      setLoadingBackups(false);
+    }
+  };
+
+  const handleAssignBackup = async (shiftId, employeeId, swapId) => {
+    try {
+      await api.assignShiftEmployee(shiftId, employeeId);
+      await api.approveSwap(swapId);
+      showToast("Backup worker assigned and swap resolved successfully!");
+      setSelectedSwapForBackup(null);
+      loadSwaps();
+    } catch (e) {
+      showToast("Failed to assign backup: " + e.message, 'error');
     }
   };
 
@@ -72,6 +100,7 @@ export function SwapMarketplace() {
     return {
       id: swap.id,
       status: swap.status || 'PENDING',
+      rawSwap: swap,
       initiator: { name: initiatorName, role: initiatorRole },
       recipient: { name: recipientName, role: recipientRole },
       givingUp: givingUpTime,
@@ -197,17 +226,29 @@ export function SwapMarketplace() {
 
                   {/* Actions */}
                   {activeTab === 'pending' && (
-                    <div className="flex justify-between items-center pt-6 border-t border-outline-variant">
+                    <div className="flex justify-between items-center pt-6 border-t border-outline-variant gap-2 flex-wrap">
                       <Button variant="dangerGhost" className="font-bold px-0 hover:bg-transparent" onClick={() => handleAction(swap.id, 'REJECT')}>
                         <X className="w-4 h-4 mr-2" /> Reject
                       </Button>
+                      <Button 
+                        variant="outline" 
+                        className="font-bold text-[#1e1a8a] border-[#1e1a8a] hover:bg-[#1e1a8a]/5 shadow-sm text-xs py-1.5 px-3"
+                        onClick={() => {
+                          setSelectedSwapForBackup(swap);
+                          if (swap.rawSwap && swap.rawSwap.requesterShift) {
+                            loadBackupsForShift(swap.rawSwap.requesterShift.id);
+                          }
+                        }}
+                      >
+                        <ArrowRightLeft className="w-4 h-4 mr-2" /> AI Backups
+                      </Button>
                       {swap.hasViolation ? (
-                        <Button variant="outline" className="font-bold border-error text-error hover:bg-error/5 shadow-sm" onClick={() => handleAction(swap.id, 'OVERRIDE')}>
-                          <AlertTriangle className="w-4 h-4 mr-2" /> Override & Approve
+                        <Button variant="outline" className="font-bold border-error text-error hover:bg-error/5 shadow-sm text-xs py-1.5 px-3" onClick={() => handleAction(swap.id, 'OVERRIDE')}>
+                          <AlertTriangle className="w-4 h-4 mr-2" /> Override
                         </Button>
                       ) : (
-                        <Button variant="success" className="font-bold border-transparent" onClick={() => handleAction(swap.id, 'APPROVE')}>
-                          <Check className="w-4 h-4 mr-2 text-white" /> Approve Swap
+                        <Button variant="success" className="font-bold border-transparent text-xs py-1.5 px-3" onClick={() => handleAction(swap.id, 'APPROVE')}>
+                          <Check className="w-4 h-4 mr-2 text-white" /> Approve
                         </Button>
                       )}
                     </div>
@@ -219,6 +260,59 @@ export function SwapMarketplace() {
         </div>
         
       </div>
+
+      {/* Right Slide-out AI Backup Recommendations Panel */}
+      {selectedSwapForBackup && (
+        <div className="w-[400px] bg-white border-l border-outline-variant flex flex-col shrink-0 animate-in slide-in-from-right duration-300 shadow-2xl z-20 absolute right-0 top-0 bottom-0">
+          <div className="p-6 border-b border-outline-variant flex items-start justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-on-surface">AI Backup Recommendations</h3>
+              <p className="text-xs font-semibold text-on-surface-variant mt-1">Eligible replacements for {selectedSwapForBackup.initiator.name}'s shift</p>
+            </div>
+            <button onClick={() => setSelectedSwapForBackup(null)} className="text-outline hover:text-on-surface">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {loadingBackups ? (
+              <div className="h-full flex items-center justify-center text-outline font-semibold">Analyzing qualifications and reliability...</div>
+            ) : backupRecommendations.length === 0 ? (
+              <div className="p-4 bg-surface-variant/20 border border-outline-variant rounded-lg text-center text-on-surface-variant text-sm font-semibold">
+                No eligible backup workers found. All other employees have leave requests or overlapping shifts.
+              </div>
+            ) : (
+              backupRecommendations.map(emp => (
+                <div key={emp.id} className="p-4 border border-outline-variant rounded-xl flex items-center justify-between hover:shadow-md transition-shadow bg-white">
+                  <div className="flex items-center gap-3">
+                    <Avatar name={emp.name} size="md" />
+                    <div>
+                      <div className="font-bold text-sm text-on-surface">{emp.name}</div>
+                      <div className="text-xs font-semibold text-success flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {Math.round(emp.reliabilityScore * 100)}% Reliability
+                      </div>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="primary" 
+                    size="sm"
+                    className="bg-[#1e1a8a] text-white text-xs font-bold py-1.5 px-3"
+                    onClick={() => {
+                      if (selectedSwapForBackup.rawSwap && selectedSwapForBackup.rawSwap.requesterShift) {
+                        handleAssignBackup(selectedSwapForBackup.rawSwap.requesterShift.id, emp.id, selectedSwapForBackup.id);
+                      }
+                    }}
+                  >
+                    Assign
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

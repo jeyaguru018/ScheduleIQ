@@ -10,12 +10,14 @@ import {
   ArrowLeftRight, 
   AlertTriangle,
   CalendarDays,
-  LogOut
+  LogOut,
+  Cpu
 } from 'lucide-react';
 
 export function Sidebar({ currentPage, setCurrentPage, role, user, onLogout }) {
   const managerLinks = [
     { id: 'dashboard', label: 'Command Center', icon: LayoutDashboard },
+    { id: 'control_room', label: 'Live Control Room', icon: Cpu },
     { id: 'ai_generator', label: 'AI Generator', icon: Sparkles },
     { id: 'demand_forecast', label: 'Demand Forecast', icon: TrendingUp },
     { id: 'roster', label: 'Roster', icon: Users },

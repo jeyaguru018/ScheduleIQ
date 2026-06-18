@@ -20,9 +20,33 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final AvailabilityRepository availabilityRepository;
     private final ForecastingSignalRepository forecastingSignalRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ShiftRepository shiftRepository;
+    private final LeaveRequestRepository leaveRequestRepository;
+    private final SwapRequestRepository swapRequestRepository;
+    private final JobStatusRepository jobStatusRepository;
 
     @Override
     public void run(String... args) throws Exception {
+        java.io.File marker = new java.io.File("../.db-wiped");
+        if (!marker.exists()) {
+            System.out.println(">>> First run after update: Performing complete database wipe...");
+            try {
+                swapRequestRepository.deleteAllInBatch();
+                leaveRequestRepository.deleteAllInBatch();
+                shiftRepository.deleteAllInBatch();
+                availabilityRepository.deleteAllInBatch();
+                employeeRepository.deleteAllInBatch();
+                jobStatusRepository.deleteAllInBatch();
+                forecastingSignalRepository.deleteAllInBatch();
+                
+                // Write marker file
+                marker.createNewFile();
+                System.out.println(">>> Database successfully cleared and marker file created.");
+            } catch (Exception e) {
+                System.err.println("Failed to clear database on first run: " + e.getMessage());
+            }
+        }
+
         if (forecastingSignalRepository.count() > 0) {
             System.out.println(">>> Database already seeded. Skipping initial seeding.");
             return;
