@@ -8,7 +8,8 @@ import {
   ArrowLeftRight, 
   AlertTriangle,
   MessageCircle,
-  DollarSign
+  DollarSign,
+  CalendarRange
 } from 'lucide-react';
 import * as api from '../api';
 
@@ -28,14 +29,15 @@ export function CommandCenter() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const endStr = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+        const todayStr = new Date().toISOString().split('T')[0] + 'T00:00:00';
+        const endStr = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0] + 'T23:59:59';
         
         // Fetch raw data
         const shifts = await api.getShifts(todayStr, endStr).catch(() => []);
         const swaps = await api.getSwapRequests().catch(() => []);
         const realAlerts = await api.getAlerts().catch(() => []);
         const employees = await api.getAllEmployees().catch(() => []);
+        const pendingLeaves = await api.getAllLeaves().catch(() => []);
         
         // Map real alerts from PostgreSQL
         const mappedAlerts = realAlerts.map(alert => {
@@ -51,18 +53,41 @@ export function CommandCenter() {
             name: empName,
             time: timeStr,
             role: empRole,
-            noShowRisk: alert.noShowRisk
+            noShowRisk: alert.noShowRisk,
+            type: 'no-show'
           };
         });
 
+        // Map pending leave requests as alerts
+        const leaveAlerts = (pendingLeaves || []).filter(l => l.status === 'PENDING').map(leave => ({
+          id: `leave-${leave.id}`,
+          name: leave.employee ? leave.employee.name : 'Employee',
+          time: new Date(leave.leaveDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+          role: leave.reason || 'Personal leave',
+          noShowRisk: null,
+          type: 'leave',
+          leaveId: leave.id
+        }));
+
+        const allAlerts = [...leaveAlerts, ...mappedAlerts];
+
         // Compute aggregates based on real database records
         const pendingCount = swaps.filter(s => s.status === 'PENDING').length;
-        const totalAlertsCount = mappedAlerts.length;
+        const totalAlertsCount = allAlerts.length;
+        
+        // Real coverage: percentage of shifts that have an assigned employee
+        const assignedShifts = shifts.filter(s => s.employee != null).length;
+        const realCoverage = shifts.length > 0 ? Math.round((assignedShifts / shifts.length) * 100) : 0;
 
         // Map timeline from real shifts today
-        const todayDay = new Date().getDate();
+        const today = new Date();
         const mappedTimeline = shifts
-          .filter(s => new Date(s.startTime).getDate() === todayDay)
+          .filter(s => {
+            const shiftDate = new Date(s.startTime);
+            return shiftDate.getDate() === today.getDate() && 
+                   shiftDate.getMonth() === today.getMonth() &&
+                   shiftDate.getFullYear() === today.getFullYear();
+          })
           .map(s => {
             const st = new Date(s.startTime).getHours();
             const et = new Date(s.endTime).getHours() === 0 ? 24 : new Date(s.endTime).getHours();
@@ -94,12 +119,12 @@ export function CommandCenter() {
 
         setData({
           shiftsThisWeek: shifts.length,
-          coverage: shifts.length > 0 ? 98 : 0,
+          coverage: realCoverage,
           pendingSwaps: pendingCount,
           noShowRisk: totalAlertsCount,
           totalCost: totalWages,
           timeline: mappedTimeline,
-          alerts: mappedAlerts,
+          alerts: allAlerts,
           fairness: mappedFairness
         });
       } catch (e) {
@@ -163,11 +188,10 @@ export function CommandCenter() {
             <div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold text-on-surface">{data.coverage}%</span>
-                <span className="text-xs font-bold text-success bg-success/10 px-1.5 py-0.5 rounded text-green-700">+2%</span>
               </div>
               {/* Progress bar */}
               <div className="w-full bg-success/20 h-2 rounded-full mt-3 overflow-hidden">
-                <div className="bg-success h-full rounded-full" style={{ width: '94%' }}></div>
+                <div className="bg-success h-full rounded-full transition-all" style={{ width: `${data.coverage}%` }}></div>
               </div>
             </div>
           </Card>
@@ -284,27 +308,41 @@ export function CommandCenter() {
                   <p className="text-xs text-on-surface-variant max-w-xs mt-1">No critical alerts or no-show risks detected right now.</p>
                 </div>
               ) : (
-                data.alerts.map(alert => (
+              data.alerts.map(alert => (
                   <div key={alert.id} className="p-5 flex items-center justify-between border-b border-outline-variant last:border-0 hover:bg-surface-variant/20 transition-colors">
                     <div className="flex items-center gap-4">
-                      <Avatar name={alert.name} size="lg" className="border-error/30" />
+                      <Avatar name={alert.name} size="lg" className={alert.type === 'leave' ? 'border-[#f59e0b]/30' : 'border-error/30'} />
                       <div>
                         <h4 className="text-base font-bold text-on-surface flex items-center gap-2">
                           {alert.name} 
-                          <span className="text-xs font-bold text-error bg-error/10 px-2 py-0.5 rounded">High No-Show Risk</span>
+                          {alert.type === 'leave' ? (
+                            <span className="text-xs font-bold text-[#b45309] bg-[#fffbeb] px-2 py-0.5 rounded border border-[#fcd34d]">Pending Leave</span>
+                          ) : (
+                            <span className="text-xs font-bold text-error bg-error/10 px-2 py-0.5 rounded">High No-Show Risk</span>
+                          )}
                         </h4>
-                        <p className="text-sm text-on-surface-variant font-medium">{alert.time} • {alert.role}</p>
+                        <p className="text-sm text-on-surface-variant font-medium">
+                          {alert.type === 'leave' ? (
+                            <><CalendarRange className="w-3.5 h-3.5 inline mr-1" />{alert.time} • {alert.role}</>
+                          ) : (
+                            <>{alert.time} • {alert.role}</>
+                          )}
+                        </p>
                       </div>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleMessage(alert.name)}
-                      className="border-outline-variant text-on-surface hover:text-primary hover:border-primary font-bold shadow-sm bg-white"
-                    >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Message
-                    </Button>
+                    {alert.type === 'leave' ? (
+                      <span className="text-xs font-bold text-[#b45309] bg-[#fffbeb] px-3 py-1.5 rounded-lg border border-[#fcd34d]">Review in Alert Center</span>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleMessage(alert.name)}
+                        className="border-outline-variant text-on-surface hover:text-primary hover:border-primary font-bold shadow-sm bg-white"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Message
+                      </Button>
+                    )}
                   </div>
                 ))
               )}

@@ -25,6 +25,7 @@ import { useToast } from './common/Toast';
 export function AiGenerator() {
   const [loading, setLoading] = useState(false);
   const [schedule, setSchedule] = useState(null);
+  const [generationMetrics, setGenerationMetrics] = useState({ duration: '0', coverage: 0, cost: 0 });
   const [budget, setBudget] = useState(120000);
   const [toggles, setToggles] = useState({
     rest: true,
@@ -89,28 +90,38 @@ export function AiGenerator() {
 
   const handleGenerate = async () => {
     setLoading(true);
+    setSchedule(null);
+    const genStartTime = Date.now();
     try {
       const start = new Date(targetWeekStart);
       const end = new Date(start);
-      end.setDate(start.getDate() + 7);
+      end.setDate(start.getDate() + 6); // 7-day range: Mon to Sun
       
       const startStr = start.toISOString().split('T')[0] + 'T00:00:00';
       const endStr = end.toISOString().split('T')[0] + 'T23:59:59';
 
+      console.log('[AiGenerator] Generating schedule:', { startStr, endStr, budget });
+
       // Call OR-Tools scheduler solver asynchronously
       const jobRes = await api.generateSchedule(startStr, endStr, budget);
       const jobId = jobRes.jobId;
+      console.log('[AiGenerator] Job created:', jobId);
 
-      // Enter status polling loop
+      // Enter status polling loop — wait while PENDING or RUNNING
       let status = "PENDING";
       let attempts = 0;
-      const maxAttempts = 30; // 45 seconds total timeout limit
+      const maxAttempts = 40; // 60 seconds total timeout limit
 
-      while (status === "PENDING" && attempts < maxAttempts) {
-        // Wait 1.5s between polling checks
+      while ((status === "PENDING" || status === "RUNNING") && attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 1500));
-        const jobInfo = await api.getJobStatus(jobId);
-        status = jobInfo.status;
+        try {
+          const jobInfo = await api.getJobStatus(jobId);
+          status = jobInfo.status;
+          console.log(`[AiGenerator] Poll #${attempts + 1}: status=${status}, progress=${jobInfo.progressPct || 0}%`);
+        } catch (pollErr) {
+          console.warn('[AiGenerator] Poll error (retrying):', pollErr.message);
+          // Continue polling on transient errors
+        }
         attempts++;
       }
 
@@ -118,14 +129,27 @@ export function AiGenerator() {
         throw new Error("Constraint solver failed to calculate an optimized roster.");
       }
 
-      if (status === "PENDING") {
+      if (status === "PENDING" || status === "RUNNING") {
         throw new Error("Schedule generation timed out. Please try again with relaxed constraints.");
       }
       
+      console.log('[AiGenerator] Solver completed. Fetching shifts...');
+      
       // Fetch shifts matching this range
       const shifts = await api.getShifts(startStr, endStr) || [];
+      console.log(`[AiGenerator] Fetched ${shifts.length} shifts from backend`);
+      
+      if (shifts.length === 0) {
+        showToast("Schedule solver completed but no shifts were created for this week. Try a different date range.", 'error');
+        setSchedule(null);
+        return;
+      }
       
       const empMap = {};
+      let totalAssignedHours = 0;
+      let totalCost = 0;
+      let assignedShiftCount = 0;
+
       shifts.forEach(s => {
         const empName = s.employee ? s.employee.name : 'Open Pool';
         const role = s.employee ? s.employee.role : s.role;
@@ -134,23 +158,41 @@ export function AiGenerator() {
         }
         const date = new Date(s.startTime);
         const startDay = new Date(startStr);
-        const diffTime = Math.abs(date - startDay);
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
-        if (diffDays >= 0 && diffDays < 7) {
-          const st = date.getHours().toString().padStart(2, '0');
-          const sm = date.getMinutes().toString().padStart(2, '0');
-          const endObj = new Date(s.endTime);
-          const et = endObj.getHours().toString().padStart(2, '0');
-          const em = endObj.getMinutes().toString().padStart(2, '0');
-          empMap[empName].days[diffDays] = { time: `${st}:${sm} - ${et}:${em}`, task: s.role };
+        // Use date-only comparison to avoid timezone drift
+        const daysDiff = Math.round((date.setHours(0,0,0,0) - startDay.setHours(0,0,0,0)) / (1000 * 60 * 60 * 24));
+        // Re-parse startTime since setHours mutated date
+        const shiftStart = new Date(s.startTime);
+        const shiftEnd = new Date(s.endTime);
+        if (daysDiff >= 0 && daysDiff < 7) {
+          const st = shiftStart.getHours().toString().padStart(2, '0');
+          const sm = shiftStart.getMinutes().toString().padStart(2, '0');
+          const et = shiftEnd.getHours().toString().padStart(2, '0');
+          const em = shiftEnd.getMinutes().toString().padStart(2, '0');
+          empMap[empName].days[daysDiff] = { time: `${st}:${sm} - ${et}:${em}`, task: s.role };
+          
+          // Compute real metrics
+          const durationHours = (shiftEnd - shiftStart) / (1000 * 60 * 60);
+          totalAssignedHours += durationHours;
+          if (s.employee) {
+            assignedShiftCount++;
+            totalCost += durationHours * (s.employee.baseHourlyRate || 100);
+          }
         }
       });
 
-      setSchedule(Object.values(empMap));
-      showToast("Schedule generated successfully via AI engine.");
+      const scheduleResult = Object.values(empMap);
+      const genDuration = ((Date.now() - genStartTime) / 1000).toFixed(1);
+      const coveragePct = shifts.length > 0 ? Math.round((assignedShiftCount / shifts.length) * 100) : 0;
+      
+      // Store metrics alongside schedule
+      setGenerationMetrics({ duration: genDuration, coverage: coveragePct, cost: Math.round(totalCost) });
+      setSchedule(scheduleResult);
+      console.log(`[AiGenerator] Schedule ready: ${scheduleResult.length} rows, coverage=${coveragePct}%`);
+      showToast(`Schedule generated successfully! ${assignedShiftCount}/${shifts.length} shifts assigned.`);
     } catch (e) {
+      console.error('[AiGenerator] Generation failed:', e);
       showToast("Failed to generate schedule: " + e.message, 'error');
-      setSchedule([]);
+      setSchedule(null);
     } finally {
       setLoading(false);
     }
@@ -392,16 +434,16 @@ export function AiGenerator() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex gap-6">
                 <div className="flex items-center gap-2 text-sm font-semibold text-on-surface">
-                  <Clock className="w-4 h-4 text-success" /> Generated in {(Math.random() * 2 + 1).toFixed(1)}s
+                  <Clock className="w-4 h-4 text-success" /> Generated in {generationMetrics.duration}s
                 </div>
                 <div className="flex items-center gap-2 text-sm font-semibold text-on-surface">
-                  <CheckCircle2 className="w-4 h-4 text-success" /> Coverage: {Math.floor(Math.random() * 5 + 95)}%
+                  <CheckCircle2 className="w-4 h-4 text-success" /> Coverage: {generationMetrics.coverage}%
                 </div>
                 <div className="flex items-center gap-2 text-sm font-semibold text-on-surface">
-                  <DollarSign className="w-4 h-4 text-on-surface-variant" /> Cost: ₹{(budget - Math.floor(Math.random() * 5000)).toLocaleString()}
+                  <DollarSign className="w-4 h-4 text-on-surface-variant" /> Cost: ₹{generationMetrics.cost.toLocaleString()}
                 </div>
                 <div className="flex items-center gap-2 text-sm font-semibold text-on-surface">
-                  <Scale className="w-4 h-4 text-on-surface-variant" /> Fairness: {Math.floor(Math.random() * 10 + 85)}/100
+                  <Scale className="w-4 h-4 text-on-surface-variant" /> Fairness: {Math.min(100, Math.max(0, 100 - getComplianceViolations().length * 10))}/100
                 </div>
               </div>
               <div className="flex gap-3">

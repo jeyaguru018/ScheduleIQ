@@ -12,7 +12,9 @@ import {
   Clock,
   Coffee,
   CheckCircle2,
-  CalendarRange
+  CalendarRange,
+  FileText,
+  XCircle
 } from 'lucide-react';
 import { SparklesIcon } from './AiGenerator';
 import { useToast } from './common/Toast';
@@ -26,14 +28,16 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Leave request state
+  // Leave state
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [leaveDate, setLeaveDate] = useState('');
   const [leaveReason, setLeaveReason] = useState('');
   const [submittingLeave, setSubmittingLeave] = useState(false);
+  const [myLeaves, setMyLeaves] = useState([]);
 
   useEffect(() => {
     fetchMyShifts();
+    fetchMyLeaves();
   }, []);
 
   const fetchMyShifts = async () => {
@@ -61,6 +65,15 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
       console.error("Failed to load employee shifts:", e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMyLeaves = async () => {
+    try {
+      const data = await api.getMyLeaves();
+      setMyLeaves(data || []);
+    } catch (e) {
+      console.warn('Failed to load my leaves:', e.message);
     }
   };
 
@@ -103,6 +116,8 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
       setIsLeaveModalOpen(false);
       setLeaveDate('');
       setLeaveReason('');
+      // Immediately refresh leave list so user sees their submission
+      await fetchMyLeaves();
     } catch (e) {
       showToast(e.message || "Failed to submit leave request.", "error");
     } finally {
@@ -271,6 +286,45 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                               Swap
                             </button>
                           )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* My Leave Requests */}
+            <div>
+              <h3 className="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#1e1a8a]" /> My Leave Requests
+              </h3>
+              {myLeaves.length === 0 ? (
+                <div className="text-center py-6 text-sm text-outline-variant font-semibold bg-surface-variant/30 rounded-xl border border-outline-variant/50">
+                  No leave requests submitted yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {myLeaves.map(leave => {
+                    const statusColors = {
+                      PENDING: 'bg-[#fffbeb] text-[#b45309] border-[#fcd34d]',
+                      APPROVED: 'bg-[#f0fdf4] text-[#15803d] border-[#b9f6ca]',
+                      REJECTED: 'bg-[#fef2f2] text-[#b91c1c] border-[#fca5a5]'
+                    };
+                    const statusIcons = {
+                      PENDING: <Clock className="w-4 h-4" />,
+                      APPROVED: <CheckCircle2 className="w-4 h-4" />,
+                      REJECTED: <XCircle className="w-4 h-4" />
+                    };
+                    return (
+                      <div key={leave.id} className={`flex items-center justify-between p-4 rounded-xl border ${statusColors[leave.status] || 'bg-white border-outline-variant'}`}>
+                        <div>
+                          <p className="text-sm font-bold">{new Date(leave.leaveDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+                          <p className="text-xs font-medium mt-0.5 opacity-80">{leave.reason || 'Personal'}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
+                          {statusIcons[leave.status]}
+                          {leave.status}
                         </div>
                       </div>
                     );

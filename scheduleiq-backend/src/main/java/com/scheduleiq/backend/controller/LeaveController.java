@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -33,6 +34,7 @@ public class LeaveController {
 
     /** GET /api/leave/my — Employee sees their own leave requests */
     @GetMapping("/my")
+    @Transactional
     public ResponseEntity<List<LeaveRequest>> getMyLeaves(@AuthenticationPrincipal UserDetails userDetails) {
         return employeeRepository.findByEmail(userDetails.getUsername())
                 .map(emp -> ResponseEntity.ok(leaveRequestRepository.findByEmployee(emp)))
@@ -41,6 +43,7 @@ public class LeaveController {
 
     /** POST /api/leave — Employee submits a leave request */
     @PostMapping
+    @Transactional
     public ResponseEntity<?> requestLeave(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody Map<String, String> request) {
@@ -62,6 +65,7 @@ public class LeaveController {
     /** PATCH /api/leave/{id}/approve — Manager approves a leave */
     @PatchMapping("/{id}/approve")
     @PreAuthorize("hasRole('MANAGER')")
+    @Transactional
     public ResponseEntity<LeaveRequest> approveLeave(@PathVariable Long id) {
         return leaveRequestRepository.findById(id)
                 .map(leave -> {
@@ -74,6 +78,7 @@ public class LeaveController {
     /** PATCH /api/leave/{id}/reject — Manager rejects a leave */
     @PatchMapping("/{id}/reject")
     @PreAuthorize("hasRole('MANAGER')")
+    @Transactional
     public ResponseEntity<LeaveRequest> rejectLeave(@PathVariable Long id) {
         return leaveRequestRepository.findById(id)
                 .map(leave -> {
