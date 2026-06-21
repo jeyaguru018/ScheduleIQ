@@ -106,7 +106,7 @@ export async function login(email, password) {
   const data = await apiFetch('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
-    timeout: 5000,
+    timeout: 30000,
     retries: 0
   });
   setToken(data.token);
@@ -118,7 +118,7 @@ export async function register(payload) {
   const data = await apiFetch('/api/auth/register', {
     method: 'POST',
     body: JSON.stringify(payload),
-    timeout: 5000,
+    timeout: 30000,
     retries: 0
   });
   setToken(data.token);
