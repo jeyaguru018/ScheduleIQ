@@ -36,6 +36,9 @@ public class Shift {
     @JoinColumn(name = "employee_id")
     private Employee employee;
 
+    @Column(name = "manager_id")
+    private Long managerId;
+
     @NotNull
     @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;

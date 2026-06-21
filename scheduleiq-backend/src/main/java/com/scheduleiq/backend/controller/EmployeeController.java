@@ -32,10 +32,18 @@ public class EmployeeController {
     /** GET /api/employees — List all employees (manager only). Cached for 5 minutes. */
     @GetMapping
     @PreAuthorize("hasRole('MANAGER')")
-    @Cacheable(value = "employees")
-    public ResponseEntity<List<Employee>> getAllEmployees() {
-        log.debug("Cache miss: fetching all employees from database");
-        return ResponseEntity.ok(employeeRepository.findAll());
+    @Cacheable(value = "employees", key = "#userDetails.username")
+    public ResponseEntity<List<Employee>> getAllEmployees(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails) {
+        log.debug("Cache miss: fetching team employees from database for manager: {}", userDetails.getUsername());
+        return employeeRepository.findByEmail(userDetails.getUsername())
+                .map(manager -> {
+                    List<Employee> team = new java.util.ArrayList<>();
+                    team.add(manager);
+                    team.addAll(employeeRepository.findByManagerIdOrderByIdAsc(manager.getId()));
+                    return ResponseEntity.ok(team);
+                })
+                .orElse(ResponseEntity.ok(List.of()));
     }
 
     /** GET /api/employees/me — Current user's profile. Cached by email. */

@@ -22,4 +22,8 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
 
     @EntityGraph(attributePaths = {"employee"})
     List<LeaveRequest> findByLeaveDateBetween(LocalDate start, LocalDate end);
+
+    @Override
+    @EntityGraph(attributePaths = {"employee"})
+    java.util.Optional<LeaveRequest> findById(Long id);
 }

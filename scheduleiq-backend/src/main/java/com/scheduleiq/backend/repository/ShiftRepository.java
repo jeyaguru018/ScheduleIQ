@@ -20,4 +20,11 @@ public interface ShiftRepository extends JpaRepository<Shift, Long> {
 
     @EntityGraph(attributePaths = {"employee"})
     List<Shift> findByNoShowRiskGreaterThanEqual(Double threshold);
+
+    @EntityGraph(attributePaths = {"employee"})
+    List<Shift> findByManagerIdAndStartTimeBetween(Long managerId, LocalDateTime start, LocalDateTime end);
+
+    @Override
+    @EntityGraph(attributePaths = {"employee"})
+    java.util.Optional<Shift> findById(Long id);
 }

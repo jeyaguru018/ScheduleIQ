@@ -69,6 +69,9 @@ public class Employee {
     @Builder.Default
     private Integer fairnessScore = 100;
 
+    @Column(name = "manager_id")
+    private Long managerId;
+
     @Version // CRITICAL: Protects against concurrent modifications and race conditions!
     private Long version;
 

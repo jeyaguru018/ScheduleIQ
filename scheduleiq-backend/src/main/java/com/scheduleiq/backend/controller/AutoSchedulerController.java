@@ -3,6 +3,7 @@ package com.scheduleiq.backend.controller;
 import com.scheduleiq.backend.model.Employee;
 import com.scheduleiq.backend.model.JobStatus;
 import com.scheduleiq.backend.model.Shift;
+import com.scheduleiq.backend.model.Role;
 import com.scheduleiq.backend.repository.JobStatusRepository;
 import com.scheduleiq.backend.repository.ShiftRepository;
 import com.scheduleiq.backend.service.optimization.AutoSchedulerService;
@@ -28,16 +29,26 @@ public class AutoSchedulerController {
     private final ShiftRepository shiftRepository;
     private final com.scheduleiq.backend.repository.EmployeeRepository employeeRepository;
 
+    private Long getManagerIdForUser(org.springframework.security.core.userdetails.UserDetails userDetails) {
+        Employee user = employeeRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return user.getRole() == Role.MANAGER ? user.getId() : user.getManagerId();
+    }
+
     @PostMapping("/generate")
     public ResponseEntity<Map<String, String>> generateSchedule(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime weekStart,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime weekEnd,
-            @RequestParam double budgetCap) {
+            @RequestParam double budgetCap,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails) {
         
         String jobId = UUID.randomUUID().toString();
         
+        Employee manager = employeeRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("Manager not found"));
+
         // Immediately kick off the CPU-heavy constraint solver asynchronously!
-        autoSchedulerService.generateOptimalRoster(jobId, weekStart, weekEnd, budgetCap);
+        autoSchedulerService.generateOptimalRoster(jobId, weekStart, weekEnd, budgetCap, manager.getId());
 
         // Instantly return 202 Accepted with the tracking identifier
         java.util.Map<String, String> response = new java.util.HashMap<>();
@@ -57,9 +68,14 @@ public class AutoSchedulerController {
     @GetMapping("/shifts")
     public ResponseEntity<List<Shift>> getShifts(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails) {
         
-        List<Shift> shifts = shiftRepository.findByStartTimeBetween(start, end);
+        Long managerId = getManagerIdForUser(userDetails);
+        if (managerId == null) {
+            return ResponseEntity.ok(List.of());
+        }
+        List<Shift> shifts = shiftRepository.findByManagerIdAndStartTimeBetween(managerId, start, end);
         return ResponseEntity.ok(shifts);
     }
 

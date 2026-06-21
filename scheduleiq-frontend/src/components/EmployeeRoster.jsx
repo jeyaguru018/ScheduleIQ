@@ -88,6 +88,11 @@ export function EmployeeRoster() {
     setIsEditModalOpen(true);
   };
 
+  const getEmpDisplayId = (empId) => {
+    const idx = employees.findIndex(e => e.id === empId);
+    return `EMP-${(idx !== -1 ? idx + 1 : 1).toString().padStart(4, '0')}`;
+  };
+
   const filtered = employees.filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
 
   // Helpers for visuals
@@ -98,85 +103,111 @@ export function EmployeeRoster() {
     let color = 'bg-success';
     let label = 'Optimal';
     if (val === 0) { color = 'bg-surface-variant'; label = 'Unassigned'; }
-    else if (val < 30) { color = 'bg-primary'; label = 'Underutilized'; }
-    else if (val > 40) { color = 'bg-error'; label = 'Overtime'; }
-    
+    else if (pct > 90) { color = 'bg-error'; label = 'Overworked'; }
+    else if (pct < 50) { color = 'bg-warning'; label = 'Under-utilized'; }
+
     return (
-      <div className="w-full">
-        <div className="flex justify-between text-xs font-bold mb-1">
-          <span className="text-on-surface">{val} hrs</span>
-          <span className={val === 0 ? 'text-outline' : color.replace('bg-', 'text-')}>{label}</span>
+      <div className="flex flex-col gap-1 w-full max-w-[120px]">
+        <div className="flex justify-between text-xs font-bold">
+          <span className="text-on-surface">{val}h</span>
+          <span className={`text-[10px] uppercase px-1.5 py-0.2 rounded ${
+            color === 'bg-success' ? 'text-success bg-success/10' :
+            color === 'bg-error' ? 'text-error bg-error/10' :
+            color === 'bg-warning' ? 'text-warning bg-warning/10' : 'text-on-surface-variant bg-surface-variant'
+          }`}>{label}</span>
         </div>
-        <div className="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
-          <div className={`${color} h-full rounded-full`} style={{ width: `${pct}%` }}></div>
+        <div className="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
+          <div className={`h-full ${color}`} style={{ width: `${pct}%` }}></div>
         </div>
       </div>
     );
   };
 
-  const getFairnessVisual = (empScore) => {
-    const score = empScore || 100; 
-    let color = 'text-success bg-success/20';
-    let dot = 'bg-success';
-    if (score < 80) { color = 'text-warning bg-warning/20'; dot = 'bg-warning'; }
-    
+  const getFairnessVisual = (score) => {
+    const val = score || 100;
+    let color = 'text-success bg-success/10';
+    if (val < 70) color = 'text-error bg-error/10';
+    else if (val < 85) color = 'text-warning bg-warning/10';
+
     return (
-      <div className="flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${dot}`}></div>
-        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${color}`}>{score}%</span>
-      </div>
+      <span className={`text-xs font-extrabold px-2 py-1 rounded-md ${color}`}>
+        {val}%
+      </span>
     );
   };
 
   return (
-    <div className="flex h-full overflow-hidden bg-[#fafbfc]">
-      {/* Main Roster View */}
-      <div className="flex-1 flex flex-col p-8 overflow-hidden">
-        <div className="max-w-6xl w-full mx-auto flex flex-col h-full">
-          
-          <div className="flex items-center justify-between mb-6 shrink-0">
-            <div>
-              <h2 className="text-3xl font-bold text-on-surface tracking-tight flex items-center gap-3">
-                Employee Roster
-                <span className="text-xs font-bold text-outline uppercase tracking-wider bg-surface border border-outline-variant px-2 py-1 rounded-md">
-                  {employees.length} Total
-                </span>
-              </h2>
+    <div className="flex h-full w-full overflow-hidden bg-surface relative">
+      <div className="flex-1 flex flex-col p-8 overflow-y-auto min-w-0">
+        <div className="flex flex-col gap-6 max-w-5xl w-full mx-auto pb-12">
+          {/* Header */}
+          <div className="flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-2xl text-on-surface font-extrabold tracking-tight">Employee Roster</h1>
+                <p className="text-sm text-on-surface-variant">Manage credentials, rates, and weekly hour caps.</p>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <Button variant="outline" className="bg-white">Role: All</Button>
-              <Button variant="outline" className="bg-white">Availability</Button>
-              <Button variant="primary" className="bg-[#1e1a8a] text-white" onClick={() => setIsAddModalOpen(true)}>
-                <UserPlus className="w-4 h-4 mr-2" /> Add Employee
-              </Button>
-            </div>
+            <Button 
+              variant="primary" 
+              className="flex items-center gap-2"
+              onClick={() => setIsAddModalOpen(true)}
+            >
+              <UserPlus className="w-4 h-4" />
+              Add Employee
+            </Button>
           </div>
 
-          <Card className="flex-1 flex flex-col shadow-sm border-outline-variant overflow-hidden min-h-0">
-            {loading ? (
-              <div className="flex-1 flex items-center justify-center text-outline font-semibold">Loading roster...</div>
-            ) : employees.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-surface">
-                <div className="w-16 h-16 bg-[#1e1a8a]/10 rounded-full flex items-center justify-center mb-4 text-[#1e1a8a]">
-                  <Users className="w-8 h-8" />
+          {/* Roster Table Card */}
+          <Card className="flex flex-col overflow-hidden min-h-[300px]">
+            <CardHeader className="flex flex-row items-center justify-between gap-4 border-b border-outline-variant py-4 shrink-0 bg-surface">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base font-bold">Team Directory</CardTitle>
+                <span className="text-xs font-bold px-2 py-0.5 bg-surface-variant text-on-surface-variant rounded-full uppercase tracking-wider">{employees.length} Total</span>
+              </div>
+              <div className="flex gap-3 w-72">
+                <div className="relative w-full">
+                  <span className="absolute inset-y-0 left-3 flex items-center text-outline pointer-events-none">
+                    <SearchIcon className="w-4 h-4" />
+                  </span>
+                  <input 
+                    type="text" 
+                    placeholder="Search employees..." 
+                    className="w-full pl-9 pr-4 py-2 text-sm bg-surface-variant border border-outline-variant rounded-lg text-on-surface placeholder:text-outline focus:outline-none focus:border-primary transition-colors"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
                 </div>
-                <h3 className="text-xl font-bold text-on-surface mb-2">Build your team</h3>
-                <p className="text-sm text-on-surface-variant max-w-sm mb-6">You haven't added any employees yet. Add your first team member to start scheduling shifts and tracking fairness.</p>
-                <Button variant="primary" className="bg-[#1e1a8a] text-white font-bold px-6 py-2 shadow-md" onClick={() => setIsAddModalOpen(true)}>
-                  <UserPlus className="w-4 h-4 mr-2" /> Add First Employee
-                </Button>
+              </div>
+            </CardHeader>
+
+            {loading ? (
+              <div className="flex-1 flex items-center justify-center py-20 bg-surface">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-sm font-semibold text-on-surface-variant">Loading roster...</span>
+                </div>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center py-20 bg-surface">
+                <Users className="w-12 h-12 text-outline mb-4" />
+                <p className="text-base text-on-surface font-semibold">No employees found</p>
+                <p className="text-sm text-on-surface-variant">Try searching for another name or add a new employee.</p>
               </div>
             ) : (
               <>
-                <div className="overflow-auto flex-1">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="sticky top-0 bg-surface z-10 shadow-sm">
-                      <tr className="border-b border-outline-variant">
-                        <th className="p-4 font-bold text-xs text-outline uppercase tracking-wider w-1/4">Employee</th>
-                        <th className="p-4 font-bold text-xs text-outline uppercase tracking-wider w-[15%]">Role</th>
-                        <th className="p-4 font-bold text-xs text-outline uppercase tracking-wider w-[25%]">Weekly Hours <span className="text-[10px] lowercase normal-case ml-1 text-outline-variant">(Cap: 40h)</span></th>
-                        <th className="p-4 font-bold text-xs text-outline uppercase tracking-wider w-[15%]">Fairness Score</th>
-                        <th className="p-4 font-bold text-xs text-outline uppercase tracking-wider text-right w-[10%]">Actions</th>
+                <div className="flex-1 overflow-x-auto min-h-0 bg-surface">
+                  <table className="w-full border-collapse text-left">
+                    <thead>
+                      <tr className="border-b border-outline-variant text-[11px] font-bold text-outline uppercase tracking-wider bg-surface-variant/40">
+                        <th className="p-4">Employee</th>
+                        <th className="p-4">Role</th>
+                        <th className="p-4">Weekly Hours</th>
+                        <th className="p-4">Fairness Score</th>
+                        <th className="p-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant">
@@ -191,7 +222,7 @@ export function EmployeeRoster() {
                               <Avatar name={emp.name} size="md" />
                               <div>
                                 <div className="font-bold text-sm text-on-surface">{emp.name}</div>
-                                <div className="text-xs font-semibold text-on-surface-variant tracking-wider">EMP-{emp.id.toString().padStart(4, '0')}</div>
+                                <div className="text-xs font-semibold text-on-surface-variant tracking-wider">{getEmpDisplayId(emp.id)}</div>
                               </div>
                             </div>
                           </td>
@@ -225,16 +256,6 @@ export function EmployeeRoster() {
                     </tbody>
                   </table>
                 </div>
-                <div className="p-4 border-t border-outline-variant flex items-center justify-between shrink-0 bg-surface">
-                  <span className="text-sm font-semibold text-on-surface-variant">Showing 1-{filtered.length} of {employees.length} employees</span>
-                  <div className="flex gap-1 text-sm font-bold text-outline">
-                    <Button variant="ghost" size="icon" disabled><span className="text-lg">‹</span></Button>
-                    <Button variant="ghost" size="icon" className="bg-primary/10 text-primary">1</Button>
-                    <Button variant="ghost" size="icon">2</Button>
-                    <Button variant="ghost" size="icon">3</Button>
-                    <Button variant="ghost" size="icon"><span className="text-lg">›</span></Button>
-                  </div>
-                </div>
               </>
             )}
           </Card>
@@ -249,7 +270,7 @@ export function EmployeeRoster() {
               <Avatar name={selectedEmp.name} size="xl" className="border-2 border-surface shadow-md" />
               <div>
                 <h3 className="text-xl font-bold text-on-surface">{selectedEmp.name}</h3>
-                <p className="text-xs font-semibold text-on-surface-variant">EMP-{selectedEmp.id.toString().padStart(4, '0')} • Joined Oct 2022</p>
+                <p className="text-xs font-semibold text-on-surface-variant">{getEmpDisplayId(selectedEmp.id)} • Joined Oct 2022</p>
                 <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${selectedEmp.role === 'MANAGER' ? 'bg-[#1e1a8a]/10 text-[#1e1a8a]' : 'bg-[#14b8a6]/10 text-[#0d9488]'}`}>
                   {selectedEmp.role}
                 </span>

@@ -77,12 +77,22 @@ public class AuthController {
     @PostMapping("/register")
     @Transactional
     @CacheEvict(value = "employees", allEntries = true)
-    public ResponseEntity<?> register(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> register(
+            @RequestBody Map<String, Object> request,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails loggedInUser) {
         String email = (String) request.get("email");
 
         if (employeeRepository.findByEmail(email).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("error", "An account with this email already exists."));
+        }
+
+        Long managerId = null;
+        if (loggedInUser != null && loggedInUser.getUsername() != null) {
+            java.util.Optional<Employee> managerOpt = employeeRepository.findByEmail(loggedInUser.getUsername());
+            if (managerOpt.isPresent()) {
+                managerId = managerOpt.get().getId();
+            }
         }
 
         Employee employee = Employee.builder()
@@ -92,10 +102,11 @@ public class AuthController {
                 .role(Role.valueOf(((String) request.get("role")).toUpperCase()))
                 .baseHourlyRate(Double.parseDouble(request.get("baseHourlyRate").toString()))
                 .maxHoursPerWeek(Integer.parseInt(request.get("maxHoursPerWeek").toString()))
+                .managerId(managerId)
                 .build();
 
         employeeRepository.save(employee);
-        log.info("New employee registered: id=[{}] role=[{}] email=[{}]", employee.getId(), employee.getRole(), email);
+        log.info("New employee registered: id=[{}] role=[{}] email=[{}] managerId=[{}]", employee.getId(), employee.getRole(), email, managerId);
 
         // Send welcome/onboarding email asynchronously
         try {
