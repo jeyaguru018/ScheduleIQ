@@ -55,6 +55,9 @@ async function apiFetch(path, options = {}, retries = 2) {
     ...options.headers,
   };
 
+  const requestTimeout = options.timeout !== undefined ? options.timeout : 20000;
+  const maxRetries = options.retries !== undefined ? options.retries : retries;
+
   try {
     const fetchPromise = fetch(`${BASE_URL}${path}`, {
       ...options,
@@ -62,7 +65,7 @@ async function apiFetch(path, options = {}, retries = 2) {
       credentials: 'include',  // Include cookies for future HttpOnly JWT support
     });
 
-    const response = await withTimeout(fetchPromise, 20000);
+    const response = await withTimeout(fetchPromise, requestTimeout);
 
     if (response.status === 401) {
       clearToken();
@@ -85,13 +88,13 @@ async function apiFetch(path, options = {}, retries = 2) {
   } catch (err) {
     // Retry on network errors or server errors (5xx), but NOT on 4xx client errors
     const isNetworkError = err.name === 'TypeError' || err.message.includes('timed out') || err.message.includes('fetch');
-    const shouldRetry = isNetworkError && retries > 0;
+    const shouldRetry = isNetworkError && maxRetries > 0;
 
     if (shouldRetry) {
-      const delay = (3 - retries) * 1000; // 1s, 2s exponential backoff
-      console.warn(`[API] Retrying ${path} in ${delay}ms... (${retries} retries left)`);
+      const delay = (3 - maxRetries) * 1000; // 1s, 2s exponential backoff
+      console.warn(`[API] Retrying ${path} in ${delay}ms... (${maxRetries} retries left)`);
       await new Promise(resolve => setTimeout(resolve, delay));
-      return apiFetch(path, options, retries - 1);
+      return apiFetch(path, { ...options, retries: maxRetries - 1 }, maxRetries - 1);
     }
     throw err;
   }
@@ -103,6 +106,8 @@ export async function login(email, password) {
   const data = await apiFetch('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
+    timeout: 5000,
+    retries: 0
   });
   setToken(data.token);
   setUser({ name: data.name, role: data.role, employeeId: data.employeeId });
@@ -113,6 +118,8 @@ export async function register(payload) {
   const data = await apiFetch('/api/auth/register', {
     method: 'POST',
     body: JSON.stringify(payload),
+    timeout: 5000,
+    retries: 0
   });
   setToken(data.token);
   setUser({ name: data.name, role: data.role, employeeId: data.employeeId });
