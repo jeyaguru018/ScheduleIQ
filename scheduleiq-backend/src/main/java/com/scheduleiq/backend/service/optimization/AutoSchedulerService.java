@@ -116,16 +116,20 @@ public class AutoSchedulerService {
                 Employee emp = leave.getEmployee();
                 if (emp == null) continue;
                 // Find this employee in our list by ID
-                employees.stream()
-                    .filter(e -> e.getId().equals(emp.getId()))
-                    .findFirst()
-                    .ifPresent(e -> {
-                        for (Shift shift : openShifts) {
-                            if (shift.getStartTime().toLocalDate().equals(leave.getLeaveDate())) {
-                                model.addEquality(x.get(e.getId()).get(shift.getId()), 0);
-                            }
+                Employee matchingEmp = null;
+                for (Employee e : employees) {
+                    if (e.getId().equals(emp.getId())) {
+                        matchingEmp = e;
+                        break;
+                    }
+                }
+                if (matchingEmp != null) {
+                    for (Shift shift : openShifts) {
+                        if (shift.getStartTime().toLocalDate().equals(leave.getLeaveDate())) {
+                            model.addEquality(x.get(matchingEmp.getId()).get(shift.getId()), 0);
                         }
-                    });
+                    }
+                }
             }
 
             // Rule D: 8-hour rest period between consecutive shifts
