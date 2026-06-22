@@ -28,20 +28,6 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        java.io.File marker = new java.io.File("../.db-wiped");
-        if (!marker.exists()) {
-            System.out.println(">>> First run after update: Performing complete database wipe...");
-            try {
-                jdbcTemplate.execute("TRUNCATE TABLE swap_requests, leave_requests, shifts, availabilities, employees, job_statuses, forecasting_signals RESTART IDENTITY CASCADE");
-                
-                // Write marker file
-                marker.createNewFile();
-                System.out.println(">>> Database successfully cleared and marker file created.");
-            } catch (Exception e) {
-                System.err.println("Failed to clear database on first run: " + e.getMessage());
-            }
-        }
-
         if (forecastingSignalRepository.count() > 0) {
             System.out.println(">>> Database already seeded. Skipping initial seeding.");
             return;
