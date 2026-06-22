@@ -187,6 +187,13 @@ export async function assignShiftEmployee(shiftId, employeeId) {
   return apiFetch(`/api/schedule/shifts/${shiftId}/assign?employeeId=${employeeId}`, { method: 'PUT' });
 }
 
+export async function publishSchedule(weekStart, weekEnd) {
+  return apiFetch(
+    `/api/schedule/publish?weekStart=${weekStart}&weekEnd=${weekEnd}`,
+    { method: 'POST' }
+  );
+}
+
 // ── Shift Swap Endpoints ──────────────────────────────────────────────────────
 
 export async function getSwapRequests() {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Avatar } from './common/Avatar';
 import { 
   Bell, 
@@ -10,11 +10,13 @@ import {
   User as UserIcon,
   LogOut,
   Clock,
-  Coffee,
   CheckCircle2,
   CalendarRange,
   FileText,
-  XCircle
+  XCircle,
+  RefreshCw,
+  ChevronRight,
+  Zap
 } from 'lucide-react';
 import { SparklesIcon } from './AiGenerator';
 import { useToast } from './common/Toast';
@@ -27,6 +29,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
   const { showToast } = useToast();
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   
   // Leave state
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
@@ -40,33 +43,41 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
     fetchMyLeaves();
   }, []);
 
-  const fetchMyShifts = async () => {
-    setLoading(true);
+  const fetchMyShifts = useCallback(async (showSyncIndicator = false) => {
+    if (showSyncIndicator) setSyncing(true);
+    else setLoading(true);
+
     try {
-      const today = new Date();
-      const monday = new Date(today);
-      const day = today.getDay();
-      const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-      monday.setDate(diff);
+      // Show upcoming shifts: 3 days back and 14 days forward
+      // This ensures just-published schedules for next week are visible
+      const now = new Date();
+      const startDate = new Date(now);
+      startDate.setDate(now.getDate() - 3);
 
-      const startOfWeek = monday.toISOString().split('T')[0] + 'T00:00:00';
-      const tempEnd = new Date(monday);
-      tempEnd.setDate(monday.getDate() + 6);
-      const endOfWeek = tempEnd.toISOString().split('T')[0] + 'T23:59:59';
+      const endDate = new Date(now);
+      endDate.setDate(now.getDate() + 14);
 
-      const allShifts = await api.getShifts(startOfWeek, endOfWeek) || [];
-      // Filter shifts assigned to logged-in user
-      const myShifts = allShifts.filter(s => s.employee && s.employee.name === user.name);
-      
-      // Sort shifts by start time
+      const startStr = startDate.toISOString().split('T')[0] + 'T00:00:00';
+      const endStr = endDate.toISOString().split('T')[0] + 'T23:59:59';
+
+      const myShifts = await api.getShifts(startStr, endStr) || [];
+
+      // Backend already scopes to this employee's shifts
+      // Sort by start time ascending
       myShifts.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
       setShifts(myShifts);
+
+      if (showSyncIndicator) {
+        showToast(`Schedule synced! ${myShifts.length} shift${myShifts.length !== 1 ? 's' : ''} found.`, 'success');
+      }
     } catch (e) {
-      console.error("Failed to load employee shifts:", e);
+      console.error('Failed to load employee shifts:', e);
+      if (showSyncIndicator) showToast('Failed to sync schedule. Try again.', 'error');
     } finally {
       setLoading(false);
+      setSyncing(false);
     }
-  };
+  }, [showToast]);
 
   const fetchMyLeaves = async () => {
     try {
@@ -80,30 +91,30 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
   const handleClockIn = async (shiftId) => {
     try {
       await api.clockInShift(shiftId);
-      showToast("Successfully clocked in! Work time started.", "success");
+      showToast('Successfully clocked in! Work time started.', 'success');
       fetchMyShifts();
     } catch (e) {
-      showToast(e.message || "Failed to clock in.", "error");
+      showToast(e.message || 'Failed to clock in.', 'error');
     }
   };
 
   const handleClockOut = async (shiftId) => {
     try {
       await api.clockOutShift(shiftId);
-      showToast("Successfully clocked out! Timesheet saved.", "success");
+      showToast('Successfully clocked out! Timesheet saved.', 'success');
       fetchMyShifts();
     } catch (e) {
-      showToast(e.message || "Failed to clock out.", "error");
+      showToast(e.message || 'Failed to clock out.', 'error');
     }
   };
 
   const handleRequestSwap = async (shiftId) => {
     try {
-      await api.createSwapRequest(shiftId, null); // post to swap marketplace
-      showToast("Shift swap request posted to Marketplace!", "success");
+      await api.createSwapRequest(shiftId, null);
+      showToast('Shift swap request posted to Marketplace!', 'success');
       fetchMyShifts();
     } catch (e) {
-      showToast(e.message || "Failed to submit swap request.", "error");
+      showToast(e.message || 'Failed to submit swap request.', 'error');
     }
   };
 
@@ -112,14 +123,13 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
     setSubmittingLeave(true);
     try {
       await api.requestLeave(leaveDate, leaveReason);
-      showToast("Leave request submitted to Manager!", "success");
+      showToast('Leave request submitted! Your manager will review it.', 'success');
       setIsLeaveModalOpen(false);
       setLeaveDate('');
       setLeaveReason('');
-      // Immediately refresh leave list so user sees their submission
       await fetchMyLeaves();
     } catch (e) {
-      showToast(e.message || "Failed to submit leave request.", "error");
+      showToast(e.message || 'Failed to submit leave request.', 'error');
     } finally {
       setSubmittingLeave(false);
     }
@@ -127,7 +137,13 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
 
   const formatShiftDateLabel = (startTimeStr) => {
     const d = new Date(startTimeStr);
-    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    if (d.toDateString() === today.toDateString()) return 'Today';
+    if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   };
 
   const formatTimeLabel = (timeStr) => {
@@ -140,147 +156,213 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
     return `${hours}:${mins} ${ampm}`;
   };
 
-  // Find next shift (not clocked out yet)
-  const nextShift = shifts.find(s => s.clockStatus !== 'CLOCKED_OUT');
+  const getShiftDuration = (startStr, endStr) => {
+    const diff = (new Date(endStr) - new Date(startStr)) / (1000 * 60 * 60);
+    return `${diff}h`;
+  };
+
+  const getRoleColor = (role) => {
+    switch (role) {
+      case 'CASHIER': return 'text-[#0d9488] bg-[#14b8a6]/10';
+      case 'STOCKER': return 'text-[#7c3aed] bg-[#8b5cf6]/10';
+      case 'LEAD_CASHIER': return 'text-[#1e1a8a] bg-[#1e1a8a]/10';
+      case 'DELIVERY_BOY': return 'text-[#d97706] bg-[#f59e0b]/10';
+      default: return 'text-outline bg-surface-variant';
+    }
+  };
+
+  // Next shift = first shift that is not fully clocked out and is in the future (or active)
+  const now = new Date();
+  const nextShift = shifts.find(s => {
+    const end = new Date(s.endTime);
+    return s.clockStatus !== 'CLOCKED_OUT' && end >= now;
+  });
+
+  // Upcoming shifts (excluding nextShift)
+  const upcomingShifts = shifts.filter(s => s.id !== nextShift?.id);
+
+  // Today's stats
+  const todayShifts = shifts.filter(s => {
+    const d = new Date(s.startTime);
+    return d.toDateString() === now.toDateString();
+  });
 
   return (
-    <div className="flex-1 bg-surface-variant flex justify-center items-center h-full overflow-hidden">
-      <div className="w-full max-w-[400px] h-full bg-surface shadow-2xl relative flex flex-col overflow-hidden sm:rounded-3xl sm:h-[850px] border border-outline-variant">
-        
-        {/* Header */}
-        <header className="px-6 pt-8 pb-4 flex justify-between items-center bg-surface z-10 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[#1e1a8a] rounded flex items-center justify-center">
-              <SparklesIcon className="w-3.5 h-3.5 text-white" />
+    <div className="flex-1 bg-gradient-to-br from-[#f0f4ff] to-[#fafbfc] flex justify-center items-center h-full overflow-hidden">
+      <div className="w-full max-w-[420px] h-full bg-white shadow-2xl relative flex flex-col overflow-hidden sm:rounded-3xl sm:h-[900px] border border-outline-variant/30">
+
+        {/* Gradient Header */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#1e1a8a] to-[#312e9e] px-6 pt-10 pb-8 shrink-0">
+          <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/5 rounded-full blur-2xl" />
+          <div className="absolute -left-4 bottom-0 w-28 h-28 bg-white/5 rounded-full blur-xl" />
+          
+          <div className="relative flex justify-between items-start mb-6">
+            <div>
+              <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-1">
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </p>
+              <h1 className="text-2xl font-bold text-white">
+                Hello, {user?.name?.split(' ')[0] || 'Team'} 👋
+              </h1>
+              <p className="text-white/60 text-sm mt-0.5">{user?.role?.replace('_', ' ')}</p>
             </div>
-            <span className="font-bold text-[#1e1a8a]">ScheduleIQ</span>
+            <div className="flex items-center gap-2">
+              <button
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20 transition-all border border-white/10"
+                onClick={() => setIsLeaveModalOpen(true)}
+                title="Request Leave"
+              >
+                <CalendarRange className="w-4 h-4" />
+              </button>
+              <button onClick={onOpenProfile}>
+                <Avatar name={user?.name || 'User'} size="md" className="border-2 border-white/40 shadow-lg" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <button className="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant hover:text-error transition-colors relative" onClick={onLogout} title="Logout">
-              <LogOut className="w-5 h-5" />
-            </button>
-            <button className="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant relative" onClick={() => setIsLeaveModalOpen(true)} title="Request Leave">
-              <CalendarRange className="w-5 h-5" />
-            </button>
-            <button onClick={onOpenProfile}>
-              <Avatar name={user?.name || 'User'} size="md" className="border-2 border-surface shadow-sm" />
-            </button>
+
+          {/* Quick Stats Row */}
+          <div className="flex gap-3 relative">
+            <div className="flex-1 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+              <div className="text-2xl font-bold text-white">{shifts.length}</div>
+              <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wider mt-0.5">Upcoming Shifts</div>
+            </div>
+            <div className="flex-1 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+              <div className="text-2xl font-bold text-white">
+                {shifts.reduce((acc, s) => {
+                  const h = (new Date(s.endTime) - new Date(s.startTime)) / (1000 * 60 * 60);
+                  return acc + h;
+                }, 0).toFixed(0)}h
+              </div>
+              <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wider mt-0.5">Hours Scheduled</div>
+            </div>
+            <div className="flex-1 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+              <div className="text-2xl font-bold text-white">{myLeaves.filter(l => l.status === 'PENDING').length}</div>
+              <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wider mt-0.5">Pending Leave</div>
+            </div>
           </div>
-        </header>
+        </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto pb-24 scrollbar-hide">
-          <div className="px-6 space-y-6">
-            
-            {/* Greeting */}
-            <div>
-              <h1 className="text-2xl font-bold text-on-surface">Hello, {user?.name?.split(' ')[0] || 'Team Member'} 👋</h1>
-              <p className="text-sm text-on-surface-variant mt-1">Manage your shifts and check-in times below.</p>
-            </div>
+        <div className="flex-1 overflow-y-auto pb-24 scrollbar-hide bg-[#fafbfc]">
+          <div className="px-5 py-5 space-y-5">
 
-            {/* Next Shift / Time Clock Hero Card */}
-            {nextShift ? (
-              <div className="bg-[#1e1a8a] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-                
-                <div className="flex justify-between items-start mb-4">
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border border-white/10">
-                    {nextShift.clockStatus === 'CLOCKED_IN' ? '🔴 Active Shift' : 'Next Shift'}
-                  </span>
-                  <CalendarDays className="w-5 h-5 text-white/80" />
-                </div>
-                
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-white/80 uppercase tracking-wider mb-1">
-                    {formatShiftDateLabel(nextShift.startTime)}
-                  </p>
-                  <h2 className="text-[28px] font-extrabold leading-tight tracking-tight">
-                    {formatTimeLabel(nextShift.startTime)}<br/>– {formatTimeLabel(nextShift.endTime)}
-                  </h2>
-                </div>
-                
-                <div className="space-y-2 mb-6">
-                  <div className="flex items-center gap-3 text-sm font-semibold text-white/90">
-                    <MapPin className="w-4 h-4 text-white/60" /> Adyar Store
-                  </div>
-                  <div className="flex items-center gap-3 text-sm font-semibold text-white/90">
-                    <Briefcase className="w-4 h-4 text-white/60" /> {nextShift.role}
-                  </div>
-                </div>
+            {/* Next Shift Hero Card */}
+            {loading ? (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-outline-variant/30 text-center">
+                <div className="w-8 h-8 border-4 border-[#1e1a8a]/30 border-t-[#1e1a8a] rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-sm font-semibold text-on-surface-variant">Loading your schedule...</p>
+              </div>
+            ) : nextShift ? (
+              <div className="relative overflow-hidden rounded-2xl shadow-lg">
+                {/* Background gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#14b8a6] to-[#0d9488]" />
+                <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl" />
+                <div className="absolute -left-2 -top-2 w-20 h-20 bg-white/5 rounded-full" />
 
-                {/* Clock In / Out Buttons */}
-                <div className="pt-2">
+                <div className="relative p-6 text-white">
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="bg-white/20 border border-white/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm">
+                      {nextShift.clockStatus === 'CLOCKED_IN' ? '🟢 Active Shift' : '⏰ Next Shift'}
+                    </span>
+                    <span className="text-white/70 text-xs font-semibold">
+                      {getShiftDuration(nextShift.startTime, nextShift.endTime)}
+                    </span>
+                  </div>
+
+                  <div className="mb-5">
+                    <p className="text-white/70 text-xs font-bold uppercase tracking-wider mb-1">
+                      {formatShiftDateLabel(nextShift.startTime)}
+                    </p>
+                    <h2 className="text-3xl font-extrabold tracking-tight leading-none">
+                      {formatTimeLabel(nextShift.startTime)}
+                    </h2>
+                    <p className="text-white/80 text-base font-semibold mt-0.5">
+                      – {formatTimeLabel(nextShift.endTime)}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-4 mb-5 text-sm font-semibold text-white/80">
+                    <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-white/60" />Adyar Store</span>
+                    <span className="flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5 text-white/60" />{nextShift.role?.replace('_', ' ')}</span>
+                  </div>
+
                   {nextShift.clockStatus !== 'CLOCKED_IN' ? (
-                    <Button 
-                      className="w-full bg-[#14b8a6] hover:bg-[#0d9488] text-white font-bold py-3 shadow-md"
+                    <Button
+                      className="w-full bg-white text-[#0d9488] hover:bg-white/90 font-bold py-3 shadow-md"
                       onClick={() => handleClockIn(nextShift.id)}
                     >
-                      <Clock className="w-4 h-4 mr-2" /> Clock In
+                      <Clock className="w-4 h-4 mr-2" />Clock In
                     </Button>
                   ) : (
-                    <Button 
+                    <Button
                       className="w-full bg-[#ef4444] hover:bg-[#dc2626] text-white font-bold py-3 shadow-md border-transparent"
                       onClick={() => handleClockOut(nextShift.id)}
                     >
-                      <Clock className="w-4 h-4 mr-2" /> Clock Out
+                      <Clock className="w-4 h-4 mr-2" />Clock Out
                     </Button>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="bg-[#f1f5f9] border border-outline-variant/50 p-6 rounded-2xl text-center text-outline-variant font-bold">
-                No active or upcoming shifts scheduled.
+              <div className="bg-white rounded-2xl p-6 text-center border border-outline-variant/30 shadow-sm">
+                <CalendarDays className="w-10 h-10 text-outline-variant mx-auto mb-2" />
+                <p className="font-bold text-on-surface text-sm">No upcoming shifts found</p>
+                <p className="text-xs text-on-surface-variant mt-1">Your manager hasn't published a schedule yet. Tap Sync to refresh.</p>
+                <button
+                  onClick={() => fetchMyShifts(true)}
+                  className="mt-3 text-xs font-bold text-[#1e1a8a] hover:underline flex items-center gap-1 mx-auto"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />Sync now
+                </button>
               </div>
             )}
 
-            {/* Timeline */}
-            <div>
-              <h3 className="text-lg font-bold text-on-surface mb-4">My Roster This Week</h3>
-              
-              {loading ? (
-                <div className="text-center py-8 text-sm text-outline-variant font-semibold">Loading your shifts...</div>
-              ) : shifts.length === 0 ? (
-                <div className="text-center py-8 text-sm text-outline-variant font-semibold">No shifts assigned to you this week.</div>
-              ) : (
-                <div className="space-y-3">
-                  {shifts.map((s) => {
+            {/* Upcoming Roster */}
+            {!loading && upcomingShifts.length > 0 && (
+              <div>
+                <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4 text-[#1e1a8a]" />My Schedule
+                </h3>
+                <div className="space-y-2">
+                  {upcomingShifts.map(s => {
                     const isClockedOut = s.clockStatus === 'CLOCKED_OUT';
-                    const isClockedIn = s.clockStatus === 'CLOCKED_IN';
-                    
                     return (
-                      <div 
-                        key={s.id} 
-                        className={`relative flex items-center justify-between pl-6 py-4 border rounded-xl shadow-sm ${
-                          isClockedOut ? 'bg-surface-variant/30 border-outline-variant/50' : 
-                          isClockedIn ? 'border-l-4 border-l-[#14b8a6] bg-white border-outline-variant' :
-                          s.status === 'WAITING_SWAP' ? 'border-l-4 border-l-[#f59e0b] bg-white border-outline-variant' :
-                          'bg-white border-outline-variant'
+                      <div
+                        key={s.id}
+                        className={`flex items-center justify-between p-4 rounded-xl border shadow-sm bg-white transition-all ${
+                          isClockedOut ? 'opacity-50 border-outline-variant/30' :
+                          s.status === 'WAITING_SWAP' ? 'border-l-4 border-l-[#f59e0b] border-outline-variant/50' :
+                          'border-outline-variant/40 hover:shadow-md hover:-translate-y-0.5'
                         }`}
                       >
-                        <div>
-                          <p className="text-xs font-bold text-[#1e1a8a] uppercase tracking-wider">
-                            {formatShiftDateLabel(s.startTime)}
-                          </p>
-                          <p className="text-base font-bold text-on-surface mt-0.5">
-                            {formatTimeLabel(s.startTime)} – {formatTimeLabel(s.endTime)}
-                          </p>
-                          <p className="text-xs font-semibold text-on-surface-variant mt-1">
-                            {s.role} • Adyar Store
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-[#1e1a8a]/5 flex flex-col items-center justify-center shrink-0">
+                            <span className="text-[9px] font-bold text-[#1e1a8a] uppercase">
+                              {new Date(s.startTime).toLocaleDateString('en-US', { month: 'short' })}
+                            </span>
+                            <span className="text-base font-extrabold text-[#1e1a8a] leading-none">
+                              {new Date(s.startTime).getDate()}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-on-surface">
+                              {formatTimeLabel(s.startTime)} – {formatTimeLabel(s.endTime)}
+                            </p>
+                            <p className="text-xs font-semibold text-on-surface-variant mt-0.5 flex items-center gap-1.5">
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${getRoleColor(s.role)}`}>{s.role?.replace('_', ' ')}</span>
+                              <span className="text-outline">•</span>
+                              {getShiftDuration(s.startTime, s.endTime)}
+                            </p>
+                          </div>
                         </div>
-                        
-                        <div className="mr-4">
+                        <div className="flex items-center gap-2">
                           {isClockedOut ? (
-                            <span className="text-[10px] font-bold text-outline bg-surface-variant px-2 py-1 rounded uppercase tracking-wider">
-                              Clocked Out
-                            </span>
+                            <span className="text-[9px] font-bold text-outline bg-surface-variant px-2 py-1 rounded uppercase tracking-wider">Done</span>
                           ) : s.status === 'WAITING_SWAP' ? (
-                            <span className="text-[10px] font-bold text-[#b45309] bg-[#fffbeb] px-2 py-1 rounded border border-[#fcd34d] uppercase tracking-wider">
-                              In Swap
-                            </span>
+                            <span className="text-[9px] font-bold text-[#b45309] bg-[#fffbeb] px-2 py-1 rounded border border-[#fcd34d] uppercase">Swap Pending</span>
                           ) : (
-                            <button 
-                              className="text-xs font-bold text-[#1e1a8a] border border-[#1e1a8a]/30 px-3 py-1.5 rounded-lg hover:bg-[#1e1a8a]/5 transition-colors"
+                            <button
+                              className="text-xs font-bold text-[#1e1a8a] border border-[#1e1a8a]/20 px-2.5 py-1.5 rounded-lg hover:bg-[#1e1a8a]/5 transition-colors"
                               onClick={() => handleRequestSwap(s.id)}
                             >
                               Swap
@@ -291,39 +373,52 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                     );
                   })}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* My Leave Requests */}
             <div>
-              <h3 className="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-[#1e1a8a]" /> My Leave Requests
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#1e1a8a]" />Leave Requests
+                </h3>
+                <button
+                  onClick={() => setIsLeaveModalOpen(true)}
+                  className="text-xs font-bold text-[#1e1a8a] hover:underline flex items-center gap-1"
+                >
+                  + Request Leave
+                </button>
+              </div>
               {myLeaves.length === 0 ? (
-                <div className="text-center py-6 text-sm text-outline-variant font-semibold bg-surface-variant/30 rounded-xl border border-outline-variant/50">
-                  No leave requests submitted yet.
+                <div className="text-center py-5 text-sm text-outline-variant font-semibold bg-white rounded-xl border border-outline-variant/30 shadow-sm">
+                  <CalendarRange className="w-8 h-8 text-outline-variant mx-auto mb-1.5" />
+                  No leave requests yet.
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {myLeaves.map(leave => {
-                    const statusColors = {
-                      PENDING: 'bg-[#fffbeb] text-[#b45309] border-[#fcd34d]',
-                      APPROVED: 'bg-[#f0fdf4] text-[#15803d] border-[#b9f6ca]',
-                      REJECTED: 'bg-[#fef2f2] text-[#b91c1c] border-[#fca5a5]'
+                  {myLeaves.slice(0, 5).map(leave => {
+                    const statusConfig = {
+                      PENDING:  { color: 'bg-[#fffbeb] text-[#b45309] border-[#fcd34d]', icon: <Clock className="w-3.5 h-3.5" /> },
+                      APPROVED: { color: 'bg-[#f0fdf4] text-[#15803d] border-[#86efac]', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+                      REJECTED: { color: 'bg-[#fef2f2] text-[#b91c1c] border-[#fca5a5]', icon: <XCircle className="w-3.5 h-3.5" /> }
                     };
-                    const statusIcons = {
-                      PENDING: <Clock className="w-4 h-4" />,
-                      APPROVED: <CheckCircle2 className="w-4 h-4" />,
-                      REJECTED: <XCircle className="w-4 h-4" />
-                    };
+                    const config = statusConfig[leave.status] || statusConfig.PENDING;
                     return (
-                      <div key={leave.id} className={`flex items-center justify-between p-4 rounded-xl border ${statusColors[leave.status] || 'bg-white border-outline-variant'}`}>
+                      <div
+                        key={leave.id}
+                        className={`flex items-center justify-between p-3.5 rounded-xl border bg-white shadow-sm ${
+                          leave.status === 'APPROVED' ? 'border-[#86efac]/50' :
+                          leave.status === 'REJECTED' ? 'border-[#fca5a5]/50' : 'border-outline-variant/30'
+                        }`}
+                      >
                         <div>
-                          <p className="text-sm font-bold">{new Date(leave.leaveDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
-                          <p className="text-xs font-medium mt-0.5 opacity-80">{leave.reason || 'Personal'}</p>
+                          <p className="text-sm font-bold text-on-surface">
+                            {new Date(leave.leaveDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </p>
+                          <p className="text-xs font-medium text-on-surface-variant mt-0.5">{leave.reason || 'Personal'}</p>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
-                          {statusIcons[leave.status]}
+                        <div className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg border ${config.color}`}>
+                          {config.icon}
                           {leave.status}
                         </div>
                       </div>
@@ -332,46 +427,71 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                 </div>
               )}
             </div>
-            
+
           </div>
         </div>
 
         {/* Bottom Navigation */}
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-surface border-t border-outline-variant flex justify-around items-center px-6 pb-2 z-20">
-          <button className="flex flex-col items-center gap-1 text-[#1e1a8a]">
-            <div className="w-12 h-8 rounded-full bg-[#1e1a8a]/10 flex items-center justify-center">
-              <Home className="w-5 h-5 text-[#1e1a8a]" />
+        <div className="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-outline-variant/30 flex justify-around items-center px-4 py-3 pb-safe z-20">
+          <button className="flex flex-col items-center gap-1 group">
+            <div className="w-10 h-7 rounded-full bg-[#1e1a8a]/10 flex items-center justify-center group-hover:bg-[#1e1a8a]/20 transition-colors">
+              <Home className="w-4 h-4 text-[#1e1a8a]" />
             </div>
-            <span className="text-[10px] font-bold">Home</span>
+            <span className="text-[9px] font-bold text-[#1e1a8a] uppercase tracking-wider">Home</span>
           </button>
-          <button className="flex flex-col items-center gap-1 text-outline hover:text-on-surface transition-colors mt-2" onClick={() => fetchMyShifts()}>
-            <CalendarDays className="w-6 h-6" />
-            <span className="text-[10px] font-bold">Sync</span>
+
+          <button
+            className="flex flex-col items-center gap-1 group"
+            onClick={() => fetchMyShifts(true)}
+            disabled={syncing}
+          >
+            <div className="w-10 h-7 rounded-full bg-surface-variant flex items-center justify-center group-hover:bg-surface-variant/70 transition-colors">
+              <RefreshCw className={`w-4 h-4 text-outline ${syncing ? 'animate-spin text-[#1e1a8a]' : ''}`} />
+            </div>
+            <span className="text-[9px] font-bold text-outline uppercase tracking-wider">{syncing ? 'Syncing' : 'Sync'}</span>
           </button>
-          <button className="flex flex-col items-center gap-1 text-outline hover:text-on-surface transition-colors mt-2" onClick={() => setIsLeaveModalOpen(true)}>
-            <CalendarRange className="w-6 h-6" />
-            <span className="text-[10px] font-bold">Leave</span>
+
+          <button
+            className="flex flex-col items-center gap-1 group"
+            onClick={() => setIsLeaveModalOpen(true)}
+          >
+            <div className="w-10 h-7 rounded-full bg-surface-variant flex items-center justify-center group-hover:bg-surface-variant/70 transition-colors relative">
+              <CalendarRange className="w-4 h-4 text-outline" />
+              {myLeaves.filter(l => l.status === 'PENDING').length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-[#f59e0b] text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                  {myLeaves.filter(l => l.status === 'PENDING').length}
+                </span>
+              )}
+            </div>
+            <span className="text-[9px] font-bold text-outline uppercase tracking-wider">Leave</span>
           </button>
-          <button onClick={onOpenProfile} className="flex flex-col items-center gap-1 text-outline hover:text-on-surface transition-colors mt-2">
-            <UserIcon className="w-6 h-6" />
-            <span className="text-[10px] font-bold">Profile</span>
+
+          <button
+            onClick={() => { onLogout(); }}
+            className="flex flex-col items-center gap-1 group"
+          >
+            <div className="w-10 h-7 rounded-full bg-surface-variant flex items-center justify-center group-hover:bg-error/10 transition-colors">
+              <LogOut className="w-4 h-4 text-outline group-hover:text-error transition-colors" />
+            </div>
+            <span className="text-[9px] font-bold text-outline uppercase tracking-wider">Logout</span>
           </button>
         </div>
 
         {/* Request Leave Modal */}
-        <Modal isOpen={isLeaveModalOpen} onClose={() => setIsLeaveModalOpen(false)} title="Submit Leave Request">
+        <Modal isOpen={isLeaveModalOpen} onClose={() => setIsLeaveModalOpen(false)} title="Request Leave">
           <form onSubmit={handleRequestLeave} className="space-y-4">
-            <Input 
-              label="Leave Date" 
+            <Input
+              label="Leave Date"
               type="date"
               value={leaveDate}
               onChange={e => setLeaveDate(e.target.value)}
-              required 
+              min={new Date().toISOString().split('T')[0]}
+              required
             />
             <div>
-              <label className="block text-sm font-bold text-on-surface mb-1">Reason for Leave</label>
-              <textarea 
-                className="w-full border border-outline-variant rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-primary shadow-sm text-sm"
+              <label className="block text-sm font-bold text-on-surface mb-1.5">Reason for Leave</label>
+              <textarea
+                className="w-full border border-outline-variant rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-[#1e1a8a]/30 focus:border-[#1e1a8a] shadow-sm text-sm resize-none transition-all"
                 value={leaveReason}
                 onChange={e => setLeaveReason(e.target.value)}
                 placeholder="e.g. Medical appointment, family occasion"
@@ -381,7 +501,9 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" type="button" onClick={() => setIsLeaveModalOpen(false)}>Cancel</Button>
-              <Button variant="primary" type="submit" className="bg-[#1e1a8a] text-white" isLoading={submittingLeave}>Submit Request</Button>
+              <Button variant="primary" type="submit" className="bg-[#1e1a8a] text-white" isLoading={submittingLeave}>
+                Submit Request
+              </Button>
             </div>
           </form>
         </Modal>

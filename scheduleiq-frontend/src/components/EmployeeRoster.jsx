@@ -88,8 +88,13 @@ export function EmployeeRoster() {
     setIsEditModalOpen(true);
   };
 
-  const getEmpDisplayId = (empId) => {
-    const idx = employees.findIndex(e => e.id === empId);
+  const getEmpDisplayId = (emp) => {
+    if (emp.role === 'MANAGER') return 'MANAGER';
+    // Only count non-manager employees, ordered by ID (ascending), starting from EMP-0001
+    const nonManagers = employees
+      .filter(e => e.role !== 'MANAGER')
+      .sort((a, b) => a.id - b.id);
+    const idx = nonManagers.findIndex(e => e.id === emp.id);
     return `EMP-${(idx !== -1 ? idx + 1 : 1).toString().padStart(4, '0')}`;
   };
 
@@ -222,7 +227,7 @@ export function EmployeeRoster() {
                               <Avatar name={emp.name} size="md" />
                               <div>
                                 <div className="font-bold text-sm text-on-surface">{emp.name}</div>
-                                <div className="text-xs font-semibold text-on-surface-variant tracking-wider">{getEmpDisplayId(emp.id)}</div>
+                                <div className="text-xs font-semibold text-on-surface-variant tracking-wider">{getEmpDisplayId(emp)}</div>
                               </div>
                             </div>
                           </td>
@@ -270,7 +275,7 @@ export function EmployeeRoster() {
               <Avatar name={selectedEmp.name} size="xl" className="border-2 border-surface shadow-md" />
               <div>
                 <h3 className="text-xl font-bold text-on-surface">{selectedEmp.name}</h3>
-                <p className="text-xs font-semibold text-on-surface-variant">{getEmpDisplayId(selectedEmp.id)} • Joined Oct 2022</p>
+                <p className="text-xs font-semibold text-on-surface-variant">{getEmpDisplayId(selectedEmp)} • Joined {new Date(selectedEmp.createdAt || Date.now()).toLocaleDateString('en-US', {month: 'short', year: 'numeric'})}</p>
                 <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${selectedEmp.role === 'MANAGER' ? 'bg-[#1e1a8a]/10 text-[#1e1a8a]' : 'bg-[#14b8a6]/10 text-[#0d9488]'}`}>
                   {selectedEmp.role}
                 </span>

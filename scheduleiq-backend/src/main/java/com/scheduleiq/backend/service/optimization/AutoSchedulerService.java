@@ -12,12 +12,12 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AutoSchedulerService {
-
 
     private final EmployeeRepository employeeRepository;
     private final ShiftRepository shiftRepository;
@@ -35,34 +35,43 @@ public class AutoSchedulerService {
         jobStatusRepository.save(Objects.requireNonNull(job));
 
         try {
-            System.out.println(">>> Loading native Google OR-Tools libraries...");
-            Loader.loadNativeLibraries(); // Mandatory step for loading C++ JNI wrappers!
+            log.info(">>> Loading native Google OR-Tools libraries...");
+            Loader.loadNativeLibraries();
 
-            // 1. Fetch available workers and open shifts
-            List<Employee> employees = new java.util.ArrayList<>();
-            Employee manager = employeeRepository.findById(managerId).orElse(null);
-            if (manager != null) {
-                employees.add(manager);
+            // 1. Fetch all NON-MANAGER employees for this team
+            List<Employee> employees = employeeRepository.findByManagerIdOrderByIdAsc(managerId);
+
+            if (employees.isEmpty()) {
+                // Edge case: no employees yet — mark complete with a warning
+                log.warn(">>> No employees found for manager [{}]. Cannot generate schedule.", managerId);
+                job.setProgressPct(100);
+                job.setStatus("COMPLETED");
+                job.setErrorMessage("No employees in your team. Add employees before generating a schedule.");
+                jobStatusRepository.save(Objects.requireNonNull(job));
+                return;
             }
-            employees.addAll(employeeRepository.findByManagerIdOrderByIdAsc(managerId));
 
+            log.info(">>> Found {} employees for manager [{}]", employees.size(), managerId);
+
+            // 2. Get or create draft shifts for the week
             List<Shift> openShifts = shiftRepository.findByManagerIdAndStartTimeBetween(managerId, weekStart, weekEnd);
-
             if (openShifts.isEmpty()) {
-                // If there are no pre-seeded shifts, we create some skeleton draft shifts for the week
-                openShifts = createDraftShiftsForWeek(weekStart, managerId);
+                openShifts = createSmartDraftShiftsForWeek(weekStart, managerId, employees);
             }
 
+            log.info(">>> Working with {} open shifts", openShifts.size());
+
+            // 3. Load approved leave requests
             List<LeaveRequest> approvedLeaves = leaveRequestRepository.findByLeaveDateBetween(
                     weekStart.toLocalDate(), weekEnd.toLocalDate());
 
             job.setProgressPct(30);
             jobStatusRepository.save(Objects.requireNonNull(job));
 
-            // 2. Initialize CP-SAT Constraint Programming Model
+            // 4. Initialize CP-SAT Constraint Programming Model
             CpModel model = new CpModel();
 
-            // Decision variable mapping: Map<EmployeeId, Map<ShiftId, Literal>>
+            // Decision variable: x[emp][shift] = true if emp works that shift
             Map<Long, Map<Long, Literal>> x = new HashMap<>();
             for (Employee emp : employees) {
                 x.put(emp.getId(), new HashMap<>());
@@ -75,9 +84,9 @@ public class AutoSchedulerService {
                 }
             }
 
-            // 3. Define Hard Constraints
+            // 5. Hard Constraints
 
-            // Rule A: Single coverage - at most one employee assigned to each shift
+            // Rule A: At most one employee per shift
             for (Shift shift : openShifts) {
                 List<Literal> shiftAssignees = new ArrayList<>();
                 for (Employee emp : employees) {
@@ -86,46 +95,54 @@ public class AutoSchedulerService {
                 model.addAtMostOne(shiftAssignees.toArray(new Literal[0]));
             }
 
-            // Rule B: Overlap prevention - a worker cannot work overlapping shifts
+            // Rule B: No overlapping shifts for one employee
             for (Employee emp : employees) {
                 for (int i = 0; i < openShifts.size(); i++) {
                     Shift s1 = openShifts.get(i);
                     for (int j = i + 1; j < openShifts.size(); j++) {
                         Shift s2 = openShifts.get(j);
                         if (shiftsOverlap(s1, s2)) {
-                            model.addImplication(x.get(emp.getId()).get(s1.getId()), 
-                                    x.get(emp.getId()).get(s2.getId()).not());
+                            model.addImplication(
+                                x.get(emp.getId()).get(s1.getId()),
+                                x.get(emp.getId()).get(s2.getId()).not());
                         }
                     }
                 }
             }
 
-            // Rule C: Leave requests - a worker cannot be scheduled on their leave day
+            // Rule C: Approved leave days blocked
             for (LeaveRequest leave : approvedLeaves) {
                 if (!"APPROVED".equals(leave.getStatus())) continue;
                 Employee emp = leave.getEmployee();
-                if (emp == null || !employees.contains(emp)) continue;
-                for (Shift shift : openShifts) {
-                    if (shift.getStartTime().toLocalDate().equals(leave.getLeaveDate())) {
-                        model.addEquality(x.get(emp.getId()).get(shift.getId()), 0);
-                    }
-                }
+                if (emp == null) continue;
+                // Find this employee in our list by ID
+                employees.stream()
+                    .filter(e -> e.getId().equals(emp.getId()))
+                    .findFirst()
+                    .ifPresent(e -> {
+                        for (Shift shift : openShifts) {
+                            if (shift.getStartTime().toLocalDate().equals(leave.getLeaveDate())) {
+                                model.addEquality(x.get(e.getId()).get(shift.getId()), 0);
+                            }
+                        }
+                    });
             }
 
-            // Rule D: Mandatory 8-hour rest periods between consecutive shifts
+            // Rule D: 8-hour rest period between consecutive shifts
             for (Employee emp : employees) {
                 for (Shift s1 : openShifts) {
                     for (Shift s2 : openShifts) {
                         if (s1.getId().equals(s2.getId())) continue;
                         if (restPeriodTooShort(s1, s2, 8)) {
-                            model.addImplication(x.get(emp.getId()).get(s1.getId()), 
-                                    x.get(emp.getId()).get(s2.getId()).not());
+                            model.addImplication(
+                                x.get(emp.getId()).get(s1.getId()),
+                                x.get(emp.getId()).get(s2.getId()).not());
                         }
                     }
                 }
             }
 
-            // Rule E: Maximum weekly hours limitations
+            // Rule E: Weekly hours cap per employee
             for (Employee emp : employees) {
                 LinearExprBuilder totalHours = LinearExpr.newBuilder();
                 for (Shift shift : openShifts) {
@@ -138,31 +155,31 @@ public class AutoSchedulerService {
             job.setProgressPct(60);
             jobStatusRepository.save(Objects.requireNonNull(job));
 
-            // 4. Objective Formulation (Soft constraints)
+            // 6. Objective: maximize coverage and fairness, minimize cost
             LinearExprBuilder objective = LinearExpr.newBuilder();
             for (Employee emp : employees) {
                 for (Shift shift : openShifts) {
                     double durationHours = Duration.between(shift.getStartTime(), shift.getEndTime()).toMinutes() / 60.0;
                     long cost = (long) (durationHours * emp.getBaseHourlyRate());
-                    
+                    // Maximize assignment coverage, weighted by reliability, reduced by cost
                     long weight = 100000L - cost + (long)(emp.getReliabilityScore() * 1000);
                     objective.addTerm(x.get(emp.getId()).get(shift.getId()), weight);
                 }
             }
             model.maximize(objective.build());
 
-            // 5. Solve CP-SAT model
+            // 7. Solve
             CpSolver solver = new CpSolver();
-            solver.getParameters().setMaxTimeInSeconds(5.0);
-            
+            solver.getParameters().setMaxTimeInSeconds(10.0); // give more time
+
             job.setProgressPct(80);
             jobStatusRepository.save(Objects.requireNonNull(job));
 
             CpSolverStatus status = solver.solve(model);
+            log.info(">>> CP-SAT solver completed with status: {}", status);
 
             if (status == CpSolverStatus.OPTIMAL || status == CpSolverStatus.FEASIBLE) {
-                System.out.println(">>> Optimizer finished. Status: " + status);
-                
+                int assignedCount = 0;
                 for (Shift shift : openShifts) {
                     for (Employee emp : employees) {
                         boolean isAssigned = solver.booleanValue(x.get(emp.getId()).get(shift.getId()));
@@ -170,36 +187,29 @@ public class AutoSchedulerService {
                             shift.setEmployee(emp);
                             shift.setStatus("PUBLISHED");
                             shiftRepository.save(shift);
+                            assignedCount++;
+                            break; // at-most-one constraint ensures only one per shift
                         }
                     }
                 }
-
-                job.setProgressPct(100);
-                job.setStatus("COMPLETED");
-                jobStatusRepository.save(Objects.requireNonNull(job));
+                log.info(">>> Assigned {}/{} shifts via CP-SAT solver", assignedCount, openShifts.size());
             } else {
-                System.out.println(">>> Solver returned status FAILED or INFEASIBLE. Running fallback scheduler...");
+                log.warn(">>> CP-SAT returned {}. Running greedy fallback...", status);
                 runGreedyFallbackScheduler(managerId, employees, openShifts, approvedLeaves);
-                job.setProgressPct(100);
-                job.setStatus("COMPLETED");
-                jobStatusRepository.save(Objects.requireNonNull(job));
             }
 
-        } catch (Throwable t) {
-            System.err.println(">>> OR-Tools solver threw exception/error: " + t.getMessage() + ". Running fallback scheduler...");
-            try {
-                List<Employee> employees = new java.util.ArrayList<>();
-                Employee manager = employeeRepository.findById(managerId).orElse(null);
-                if (manager != null) {
-                    employees.add(manager);
-                }
-                employees.addAll(employeeRepository.findByManagerIdOrderByIdAsc(managerId));
+            job.setProgressPct(100);
+            job.setStatus("COMPLETED");
+            jobStatusRepository.save(Objects.requireNonNull(job));
 
+        } catch (Throwable t) {
+            log.error(">>> OR-Tools threw exception: {}. Running fallback...", t.getMessage(), t);
+            try {
+                List<Employee> employees = employeeRepository.findByManagerIdOrderByIdAsc(managerId);
                 List<Shift> openShifts = shiftRepository.findByManagerIdAndStartTimeBetween(managerId, weekStart, weekEnd);
                 if (openShifts.isEmpty()) {
-                    openShifts = createDraftShiftsForWeek(weekStart, managerId);
+                    openShifts = createSmartDraftShiftsForWeek(weekStart, managerId, employees);
                 }
-
                 List<LeaveRequest> approvedLeaves = leaveRequestRepository.findByLeaveDateBetween(
                         weekStart.toLocalDate(), weekEnd.toLocalDate());
 
@@ -209,20 +219,22 @@ public class AutoSchedulerService {
                 job.setStatus("COMPLETED");
                 jobStatusRepository.save(Objects.requireNonNull(job));
             } catch (Exception fallbackErr) {
-                fallbackErr.printStackTrace();
+                log.error(">>> Fallback scheduler also failed: {}", fallbackErr.getMessage(), fallbackErr);
                 job.setStatus("FAILED");
-                job.setErrorMessage("Fallback scheduler failed: " + fallbackErr.getMessage());
+                job.setErrorMessage("Schedule generation failed: " + fallbackErr.getMessage());
                 jobStatusRepository.save(Objects.requireNonNull(job));
             }
         }
     }
 
     private void runGreedyFallbackScheduler(Long managerId, List<Employee> employees, List<Shift> openShifts, List<LeaveRequest> approvedLeaves) {
-        System.out.println(">>> Running Java Greedy Fallback Scheduler...");
-        
+        log.info(">>> Running Java Greedy Fallback Scheduler with {} employees, {} shifts", employees.size(), openShifts.size());
+
+        // Sort employees by hourly rate (cheapest first for cost efficiency)
         List<Employee> sortedEmployees = new ArrayList<>(employees);
         sortedEmployees.sort(Comparator.comparingDouble(Employee::getBaseHourlyRate));
-        
+
+        // Build leave map: employeeId -> set of leave dates
         Map<Long, Set<java.time.LocalDate>> leaveMap = new HashMap<>();
         for (LeaveRequest leave : approvedLeaves) {
             if ("APPROVED".equals(leave.getStatus()) && leave.getEmployee() != null) {
@@ -230,33 +242,29 @@ public class AutoSchedulerService {
                         .add(leave.getLeaveDate());
             }
         }
-        
+
         Map<Long, Double> employeeHours = new HashMap<>();
         Map<Long, List<Shift>> employeeShifts = new HashMap<>();
         for (Employee emp : employees) {
             employeeHours.put(emp.getId(), 0.0);
             employeeShifts.put(emp.getId(), new ArrayList<>());
         }
-        
+
+        int assignedCount = 0;
         for (Shift shift : openShifts) {
             double shiftDuration = Duration.between(shift.getStartTime(), shift.getEndTime()).toMinutes() / 60.0;
-            
             Employee selected = null;
+
             for (Employee emp : sortedEmployees) {
-                if (emp.getRole() == Role.MANAGER && sortedEmployees.size() > 1) {
-                    continue;
-                }
-                
+                // Check weekly hours cap
                 double currentHours = employeeHours.get(emp.getId());
-                if (currentHours + shiftDuration > emp.getMaxHoursPerWeek()) {
-                    continue;
-                }
-                
-                if (leaveMap.containsKey(emp.getId()) && 
-                    leaveMap.get(emp.getId()).contains(shift.getStartTime().toLocalDate())) {
-                    continue;
-                }
-                
+                if (currentHours + shiftDuration > emp.getMaxHoursPerWeek()) continue;
+
+                // Check leave day
+                if (leaveMap.containsKey(emp.getId()) &&
+                    leaveMap.get(emp.getId()).contains(shift.getStartTime().toLocalDate())) continue;
+
+                // Check conflicts with already-assigned shifts
                 boolean hasConflict = false;
                 for (Shift s : employeeShifts.get(emp.getId())) {
                     if (shiftsOverlap(shift, s) || restPeriodTooShort(shift, s, 8) || restPeriodTooShort(s, shift, 8)) {
@@ -264,23 +272,22 @@ public class AutoSchedulerService {
                         break;
                     }
                 }
-                if (hasConflict) {
-                    continue;
-                }
-                
+                if (hasConflict) continue;
+
                 selected = emp;
                 break;
             }
-            
+
             if (selected != null) {
                 shift.setEmployee(selected);
                 shift.setStatus("PUBLISHED");
                 shiftRepository.save(shift);
-                
                 employeeHours.put(selected.getId(), employeeHours.get(selected.getId()) + shiftDuration);
                 employeeShifts.get(selected.getId()).add(shift);
+                assignedCount++;
             }
         }
+        log.info(">>> Greedy fallback assigned {}/{} shifts", assignedCount, openShifts.size());
     }
 
     private boolean shiftsOverlap(Shift s1, Shift s2) {
@@ -295,36 +302,54 @@ public class AutoSchedulerService {
         return false;
     }
 
-    // Creates skeleton shifts for mock target week if no pre-generated roster exists
-    private List<Shift> createDraftShiftsForWeek(LocalDateTime weekStart, Long managerId) {
+    /**
+     * Creates draft shifts that are proportional to the team's actual roles.
+     * Each employee gets 1 shift per day (spread across morning/afternoon/evening),
+     * ensuring a realistic coverage without creating far more shifts than employees.
+     */
+    private List<Shift> createSmartDraftShiftsForWeek(LocalDateTime weekStart, Long managerId, List<Employee> employees) {
+        log.info(">>> Creating smart draft shifts for {} employees", employees.size());
         List<Shift> shifts = new ArrayList<>();
+
+        // Determine distinct roles in the team
+        Map<Role, List<Employee>> byRole = employees.stream()
+            .collect(Collectors.groupingBy(Employee::getRole));
+
+        // Standard shift templates: morning (6-14), day (9-17), evening (14-22)
+        int[][] shiftTemplates = {
+            {6, 14},   // Early shift
+            {9, 17},   // Day shift
+            {14, 22},  // Evening shift
+        };
+
         for (int day = 0; day < 7; day++) {
             LocalDateTime dayStart = weekStart.plusDays(day);
-            
-            shifts.add(Shift.builder()
-                    .startTime(dayStart.withHour(9).withMinute(0))
-                    .endTime(dayStart.withHour(17).withMinute(0))
-                    .role(Role.CASHIER)
-                    .status("DRAFT")
-                    .managerId(managerId)
-                    .build());
 
-            shifts.add(Shift.builder()
-                    .startTime(dayStart.withHour(6).withMinute(0))
-                    .endTime(dayStart.withHour(14).withMinute(0))
-                    .role(Role.STOCKER)
-                    .status("DRAFT")
-                    .managerId(managerId)
-                    .build());
+            // For each distinct role, create one shift per employee (rotate templates)
+            int templateIdx = 0;
+            for (Map.Entry<Role, List<Employee>> entry : byRole.entrySet()) {
+                Role role = entry.getKey();
+                int empCount = entry.getValue().size();
 
-            shifts.add(Shift.builder()
-                    .startTime(dayStart.withHour(14).withMinute(0))
-                    .endTime(dayStart.withHour(22).withMinute(0))
-                    .role(Role.CASHIER)
-                    .status("DRAFT")
-                    .managerId(managerId)
-                    .build());
+                // Create as many shifts as there are employees of this role (max 2 per day per role)
+                int shiftsForRole = Math.min(empCount, 2);
+                for (int i = 0; i < shiftsForRole; i++) {
+                    int[] template = shiftTemplates[templateIdx % shiftTemplates.length];
+                    templateIdx++;
+
+                    shifts.add(Shift.builder()
+                        .startTime(dayStart.withHour(template[0]).withMinute(0))
+                        .endTime(dayStart.withHour(template[1]).withMinute(0))
+                        .role(role)
+                        .status("DRAFT")
+                        .managerId(managerId)
+                        .build());
+                }
+            }
         }
-        return shiftRepository.saveAll(Objects.requireNonNull(shifts));
+
+        List<Shift> saved = shiftRepository.saveAll(Objects.requireNonNull(shifts));
+        log.info(">>> Created {} draft shifts for the week", saved.size());
+        return saved;
     }
 }

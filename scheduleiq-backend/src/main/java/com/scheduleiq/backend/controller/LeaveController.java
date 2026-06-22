@@ -1,9 +1,12 @@
 package com.scheduleiq.backend.controller;
 
+import com.scheduleiq.backend.model.Employee;
 import com.scheduleiq.backend.model.LeaveRequest;
+import com.scheduleiq.backend.model.Role;
 import com.scheduleiq.backend.repository.EmployeeRepository;
 import com.scheduleiq.backend.repository.LeaveRequestRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,20 +22,34 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/leave")
 @RequiredArgsConstructor
+@Slf4j
 @CrossOrigin(origins = "*")
 public class LeaveController {
 
     private final LeaveRequestRepository leaveRequestRepository;
     private final EmployeeRepository employeeRepository;
 
-    /** GET /api/leave — Manager sees all leave requests */
+    /**
+     * GET /api/leave
+     * Manager sees leave requests ONLY for their own team (scoped by managerId).
+     */
     @GetMapping
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<List<LeaveRequest>> getAllLeaves() {
-        return ResponseEntity.ok(leaveRequestRepository.findAll());
+    public ResponseEntity<List<LeaveRequest>> getAllLeaves(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return employeeRepository.findByEmail(userDetails.getUsername())
+                .map(manager -> {
+                    List<LeaveRequest> teamLeaves = leaveRequestRepository.findByEmployeeManagerId(manager.getId());
+                    log.debug("Manager [{}] fetching {} leave requests for their team", manager.getId(), teamLeaves.size());
+                    return ResponseEntity.ok(teamLeaves);
+                })
+                .orElse(ResponseEntity.ok(List.of()));
     }
 
-    /** GET /api/leave/my — Employee sees their own leave requests */
+    /**
+     * GET /api/leave/my
+     * Employee sees their own leave requests.
+     */
     @GetMapping("/my")
     @Transactional
     public ResponseEntity<List<LeaveRequest>> getMyLeaves(@AuthenticationPrincipal UserDetails userDetails) {
@@ -41,7 +58,10 @@ public class LeaveController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /** POST /api/leave — Employee submits a leave request */
+    /**
+     * POST /api/leave
+     * Employee submits a leave request.
+     */
     @PostMapping
     @Transactional
     public ResponseEntity<?> requestLeave(
@@ -50,40 +70,63 @@ public class LeaveController {
 
         return employeeRepository.findByEmail(userDetails.getUsername())
                 .map(emp -> {
+                    String leaveDateStr = request.get("leaveDate");
+                    if (leaveDateStr == null || leaveDateStr.isBlank()) {
+                        return ResponseEntity.badRequest()
+                                .body(Map.of("error", "Leave date is required."));
+                    }
+
                     LeaveRequest leave = LeaveRequest.builder()
                             .employee(emp)
-                            .leaveDate(LocalDate.parse(request.get("leaveDate")))
+                            .leaveDate(LocalDate.parse(leaveDateStr))
                             .reason(request.getOrDefault("reason", "Personal"))
                             .status("PENDING")
                             .build();
-                    return ResponseEntity.status(HttpStatus.CREATED)
-                            .body(leaveRequestRepository.save(leave));
+
+                    LeaveRequest saved = leaveRequestRepository.save(leave);
+                    log.info("Employee [{}] submitted leave request for date [{}]", emp.getId(), leaveDateStr);
+                    return ResponseEntity.status(HttpStatus.CREATED).body(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /** PATCH /api/leave/{id}/approve — Manager approves a leave */
+    /**
+     * PATCH /api/leave/{id}/approve
+     * Manager approves a leave request.
+     */
     @PatchMapping("/{id}/approve")
     @PreAuthorize("hasRole('MANAGER')")
     @Transactional
-    public ResponseEntity<LeaveRequest> approveLeave(@PathVariable Long id) {
+    public ResponseEntity<LeaveRequest> approveLeave(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
         return leaveRequestRepository.findById(id)
                 .map(leave -> {
                     leave.setStatus("APPROVED");
-                    return ResponseEntity.ok(leaveRequestRepository.save(leave));
+                    LeaveRequest saved = leaveRequestRepository.save(leave);
+                    log.info("Leave [{}] approved by manager for employee [{}]",
+                            id, leave.getEmployee() != null ? leave.getEmployee().getId() : "unknown");
+                    return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /** PATCH /api/leave/{id}/reject — Manager rejects a leave */
+    /**
+     * PATCH /api/leave/{id}/reject
+     * Manager rejects a leave request.
+     */
     @PatchMapping("/{id}/reject")
     @PreAuthorize("hasRole('MANAGER')")
     @Transactional
-    public ResponseEntity<LeaveRequest> rejectLeave(@PathVariable Long id) {
+    public ResponseEntity<LeaveRequest> rejectLeave(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
         return leaveRequestRepository.findById(id)
                 .map(leave -> {
                     leave.setStatus("REJECTED");
-                    return ResponseEntity.ok(leaveRequestRepository.save(leave));
+                    LeaveRequest saved = leaveRequestRepository.save(leave);
+                    log.info("Leave [{}] rejected by manager", id);
+                    return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }

@@ -20,6 +20,8 @@ export function Login({ onLoginSuccess }) {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [serverWakingUp, setServerWakingUp] = useState(false);
+  let wakeUpTimer = null;
 
   const { showToast } = useToast();
 
@@ -37,11 +39,22 @@ export function Login({ onLoginSuccess }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setServerWakingUp(false);
+    // Show server wake-up message after 6 seconds
+    const wakeTimer = setTimeout(() => setServerWakingUp(true), 6000);
     try {
       const data = await api.login(email, password);
+      clearTimeout(wakeTimer);
       onLoginSuccess(data);
     } catch (err) {
-      showToast(err.message || 'Invalid email or password.', 'error', 5000);
+      clearTimeout(wakeTimer);
+      setServerWakingUp(false);
+      const msg = err.message?.includes('timed out')
+        ? 'Server is starting up (free tier). Please try again in 30 seconds.'
+        : err.message?.includes('Failed to fetch') || err.message?.includes('fetch')
+        ? 'Cannot reach server. Check your internet or try again in a moment.'
+        : err.message || 'Invalid email or password.';
+      showToast(msg, 'error', 7000);
     } finally {
       setLoading(false);
     }
@@ -50,6 +63,8 @@ export function Login({ onLoginSuccess }) {
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setServerWakingUp(false);
+    const wakeTimer = setTimeout(() => setServerWakingUp(true), 6000);
     try {
       const data = await api.register({
         name: regName,
@@ -59,9 +74,17 @@ export function Login({ onLoginSuccess }) {
         baseHourlyRate: parseFloat(regRate) || 250.0,
         maxHoursPerWeek: parseInt(regHours) || 40
       });
+      clearTimeout(wakeTimer);
       onLoginSuccess(data);
     } catch (err) {
-      showToast(err.message || 'Registration failed. Please check details.', 'error', 5000);
+      clearTimeout(wakeTimer);
+      setServerWakingUp(false);
+      const msg = err.message?.includes('timed out')
+        ? 'Server is starting up (free tier). Please wait 30 seconds and try again.'
+        : err.message?.includes('fetch')
+        ? 'Cannot reach server. Try again in a moment.'
+        : err.message || 'Registration failed. Please check your details.';
+      showToast(msg, 'error', 7000);
     } finally {
       setLoading(false);
     }
@@ -223,6 +246,14 @@ export function Login({ onLoginSuccess }) {
                 >
                   Sign In
                 </Button>
+
+                {/* Server wake-up indicator */}
+                {loading && serverWakingUp && (
+                  <div className="flex items-center gap-2 bg-[#fffbeb] border border-[#fcd34d] rounded-xl p-3 text-xs font-semibold text-[#b45309] animate-pulse">
+                    <span className="text-base">⏳</span>
+                    Server is waking up (free tier cold start). This can take up to 60 seconds on first login. Please wait...
+                  </div>
+                )}
 
                 <div className="text-center mt-4">
                   <span className="text-sm text-on-surface-variant">Are you a manager? </span>

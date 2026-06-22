@@ -1,346 +1,510 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './common/Card';
 import { Button } from './common/Button';
 import { Avatar } from './common/Avatar';
-import { 
-  CalendarDays, 
-  CheckCircle2, 
-  ArrowLeftRight, 
+import {
+  CalendarDays,
+  CheckCircle2,
+  ArrowLeftRight,
   AlertTriangle,
   MessageCircle,
   DollarSign,
-  CalendarRange
+  CalendarRange,
+  Clock,
+  ChevronRight,
+  TrendingUp,
+  Users,
+  RefreshCw,
+  Zap
 } from 'lucide-react';
 import * as api from '../api';
 
+const HOUR_START = 6;
+const HOUR_SPAN = 18; // 6 AM to midnight
+
 export function CommandCenter() {
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(0); // index into upcoming 7 days
+  const [expandedAlert, setExpandedAlert] = useState(null);
   const [data, setData] = useState({
     shiftsThisWeek: 0,
     coverage: 0,
     pendingSwaps: 0,
     noShowRisk: 0,
     totalCost: 0,
-    timeline: [],
+    timelineByDay: [],   // array of 7 arrays of shift objects
+    weekDays: [],        // array of {label, date, fullDate}
     alerts: [],
     fairness: []
   });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const todayStr = new Date().toISOString().split('T')[0] + 'T00:00:00';
-        const endStr = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0] + 'T23:59:59';
-        
-        // Fetch raw data
-        const shifts = await api.getShifts(todayStr, endStr).catch(() => []);
-        const swaps = await api.getSwapRequests().catch(() => []);
-        const realAlerts = await api.getAlerts().catch(() => []);
-        const employees = await api.getAllEmployees().catch(() => []);
-        const pendingLeaves = await api.getAllLeaves().catch(() => []);
-        
-        // Map real alerts from PostgreSQL
-        const mappedAlerts = realAlerts.map(alert => {
-          const empName = alert.employee ? alert.employee.name : 'Unassigned Shift';
-          const empRole = alert.employee ? alert.employee.role : alert.role;
-          const start = new Date(alert.startTime);
-          const end = new Date(alert.endTime);
-          
-          const timeStr = `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
-          
-          return {
-            id: alert.id,
-            name: empName,
-            time: timeStr,
-            role: empRole,
-            noShowRisk: alert.noShowRisk,
-            type: 'no-show'
-          };
-        });
+  const fetchData = useCallback(async (showRefresh = false) => {
+    if (showRefresh) setRefreshing(true);
+    try {
+      // Fetch next 7 days of shifts (from today)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const endDate = new Date(today);
+      endDate.setDate(today.getDate() + 7);
 
-        // Map pending leave requests as alerts
-        const leaveAlerts = (pendingLeaves || []).filter(l => l.status === 'PENDING').map(leave => ({
-          id: `leave-${leave.id}`,
-          name: leave.employee ? leave.employee.name : 'Employee',
-          time: new Date(leave.leaveDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-          role: leave.reason || 'Personal leave',
-          noShowRisk: null,
-          type: 'leave',
-          leaveId: leave.id
-        }));
+      const todayStr = today.toISOString().split('T')[0] + 'T00:00:00';
+      const endStr = endDate.toISOString().split('T')[0] + 'T23:59:59';
 
-        const allAlerts = [...leaveAlerts, ...mappedAlerts];
+      const [shifts, swaps, realAlerts, employees, pendingLeaves] = await Promise.all([
+        api.getShifts(todayStr, endStr).catch(() => []),
+        api.getSwapRequests().catch(() => []),
+        api.getAlerts().catch(() => []),
+        api.getAllEmployees().catch(() => []),
+        api.getAllLeaves().catch(() => [])
+      ]);
 
-        // Compute aggregates based on real database records
-        const pendingCount = swaps.filter(s => s.status === 'PENDING').length;
-        const totalAlertsCount = allAlerts.length;
-        
-        // Real coverage: percentage of shifts that have an assigned employee
-        const assignedShifts = shifts.filter(s => s.employee != null).length;
-        const realCoverage = shifts.length > 0 ? Math.round((assignedShifts / shifts.length) * 100) : 0;
+      // Build 7-day arrays
+      const weekDays = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        return {
+          label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'short' }),
+          date: d.getDate(),
+          month: d.toLocaleDateString('en-US', { month: 'short' }),
+          fullDate: d.toDateString(),
+          isToday: i === 0
+        };
+      });
 
-        // Map timeline from real shifts today
-        const today = new Date();
-        const mappedTimeline = shifts
-          .filter(s => {
-            const shiftDate = new Date(s.startTime);
-            return shiftDate.getDate() === today.getDate() && 
-                   shiftDate.getMonth() === today.getMonth() &&
-                   shiftDate.getFullYear() === today.getFullYear();
-          })
+      const timelineByDay = weekDays.map(dayObj => {
+        return shifts
+          .filter(s => new Date(s.startTime).toDateString() === dayObj.fullDate)
           .map(s => {
-            const st = new Date(s.startTime).getHours();
-            const et = new Date(s.endTime).getHours() === 0 ? 24 : new Date(s.endTime).getHours();
+            const st = new Date(s.startTime);
+            const et = new Date(s.endTime);
             return {
               id: s.id,
               name: s.employee ? s.employee.name : 'Unassigned',
               role: s.employee ? s.employee.role : s.role,
-              start: st,
-              end: et,
-              color: 'bg-primary-container text-primary',
-              label: 'Shift',
-              hasAlert: false
+              startHour: st.getHours() + st.getMinutes() / 60,
+              endHour: et.getHours() === 0 ? 24 : et.getHours() + et.getMinutes() / 60,
+              startStr: `${st.getHours().toString().padStart(2, '0')}:${st.getMinutes().toString().padStart(2, '0')}`,
+              endStr: `${et.getHours().toString().padStart(2, '0')}:${et.getMinutes().toString().padStart(2, '0')}`,
+              isAssigned: !!s.employee,
+              status: s.status,
+              clockStatus: s.clockStatus
             };
           });
+      });
 
-        // Map fairness from real employees
-        const mappedFairness = [...employees]
-          .sort((a, b) => (b.currentHoursThisWeek || 0) - (a.currentHoursThisWeek || 0))
-          .slice(0, 5)
-          .map(emp => ({
-            name: emp.name,
-            hours: emp.currentHoursThisWeek || 0,
-            wage: (emp.currentHoursThisWeek || 0) * (emp.baseHourlyRate || 0)
-          }));
+      // Map no-show risk alerts
+      const mappedAlerts = realAlerts.map(alert => ({
+        id: alert.id,
+        name: alert.employee ? alert.employee.name : 'Unassigned Shift',
+        time: (() => {
+          const st = new Date(alert.startTime);
+          const et = new Date(alert.endTime);
+          return `${st.getHours().toString().padStart(2,'0')}:${st.getMinutes().toString().padStart(2,'0')} – ${et.getHours().toString().padStart(2,'0')}:${et.getMinutes().toString().padStart(2,'0')}`;
+        })(),
+        role: alert.employee ? alert.employee.role : alert.role,
+        noShowRisk: alert.noShowRisk,
+        type: 'no-show'
+      }));
 
-        const totalWages = employees.reduce((sum, emp) => {
-          return sum + ((emp.currentHoursThisWeek || 0) * (emp.baseHourlyRate || 0));
-        }, 0);
+      // Map pending leave alerts
+      const leaveAlerts = (pendingLeaves || []).filter(l => l.status === 'PENDING').map(leave => ({
+        id: `leave-${leave.id}`,
+        name: leave.employee ? leave.employee.name : 'Employee',
+        time: new Date(leave.leaveDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+        role: leave.reason || 'Personal leave',
+        noShowRisk: null,
+        type: 'leave',
+        leaveId: leave.id
+      }));
 
-        setData({
-          shiftsThisWeek: shifts.length,
-          coverage: realCoverage,
-          pendingSwaps: pendingCount,
-          noShowRisk: totalAlertsCount,
-          totalCost: totalWages,
-          timeline: mappedTimeline,
-          alerts: allAlerts,
-          fairness: mappedFairness
-        });
-      } catch (e) {
-        console.error("Dashboard fetch error", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+      const allAlerts = [...leaveAlerts, ...mappedAlerts];
+
+      // Compute coverage: % of shifts that have an assigned employee
+      const assignedShifts = shifts.filter(s => s.employee != null).length;
+      const realCoverage = shifts.length > 0 ? Math.round((assignedShifts / shifts.length) * 100) : 0;
+
+      // Compute fairness from actual assigned shifts this week
+      const employeeHoursMap = {};
+      shifts.forEach(s => {
+        if (!s.employee) return;
+        const durationH = (new Date(s.endTime) - new Date(s.startTime)) / (1000 * 60 * 60);
+        employeeHoursMap[s.employee.id] = (employeeHoursMap[s.employee.id] || 0) + durationH;
+      });
+
+      const mappedFairness = [...employees]
+        .filter(e => e.role !== 'MANAGER')
+        .map(emp => ({
+          name: emp.name,
+          role: emp.role,
+          hours: Math.round((employeeHoursMap[emp.id] || 0) * 10) / 10,
+          wage: (employeeHoursMap[emp.id] || 0) * (emp.baseHourlyRate || 0)
+        }))
+        .sort((a, b) => b.hours - a.hours)
+        .slice(0, 5);
+
+      const totalWages = mappedFairness.reduce((sum, f) => sum + f.wage, 0);
+
+      setData({
+        shiftsThisWeek: shifts.length,
+        coverage: realCoverage,
+        pendingSwaps: swaps.filter(s => s.status === 'PENDING').length,
+        noShowRisk: allAlerts.length,
+        totalCost: totalWages,
+        timelineByDay,
+        weekDays,
+        alerts: allAlerts,
+        fairness: mappedFairness
+      });
+    } catch (e) {
+      console.error('Dashboard fetch error', e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
+  useEffect(() => { fetchData(); }, [fetchData]);
+
   const handleMessage = (name) => {
-    // Implementing direct messaging via mailto as a functional placeholder for chat
     const email = `${name.replace(' ', '.').toLowerCase()}@company.com`;
     window.location.href = `mailto:${email}?subject=Urgent: Upcoming Shift`;
   };
 
+  const getRoleColor = (role) => {
+    switch (role) {
+      case 'CASHIER': return 'bg-[#14b8a6]/20 text-[#0d9488] border-[#14b8a6]/30';
+      case 'STOCKER': return 'bg-[#8b5cf6]/20 text-[#7c3aed] border-[#8b5cf6]/30';
+      case 'LEAD_CASHIER': return 'bg-[#1e1a8a]/10 text-[#1e1a8a] border-[#1e1a8a]/20';
+      case 'DELIVERY_BOY': return 'bg-[#f59e0b]/20 text-[#b45309] border-[#f59e0b]/30';
+      default: return 'bg-surface-variant text-outline border-outline-variant';
+    }
+  };
+
+  const getShiftBarColor = (role, clockStatus) => {
+    if (clockStatus === 'CLOCKED_IN') return 'bg-[#14b8a6] border-[#0d9488]';
+    if (clockStatus === 'CLOCKED_OUT') return 'bg-surface-variant border-outline-variant';
+    switch (role) {
+      case 'CASHIER': return 'bg-[#1e1a8a] border-[#1e1a8a]/80';
+      case 'STOCKER': return 'bg-[#7c3aed] border-[#7c3aed]/80';
+      case 'LEAD_CASHIER': return 'bg-[#0d9488] border-[#0d9488]/80';
+      case 'DELIVERY_BOY': return 'bg-[#d97706] border-[#d97706]/80';
+      default: return 'bg-on-surface-variant border-outline';
+    }
+  };
+
+  const currentHour = new Date().getHours() + new Date().getMinutes() / 60;
+  const todayShifts = data.timelineByDay[0] || [];
+  const selectedDayShifts = data.timelineByDay[selectedDay] || [];
+
+  const timeLabels = ['6 AM', '9 AM', '12 PM', '3 PM', '6 PM', '9 PM', '12 AM'];
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-[#fafbfc]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-[#1e1a8a]/20 border-t-[#1e1a8a] rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-on-surface-variant">Loading Command Center...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 overflow-y-auto p-8 bg-[#fafbfc]">
-      <div className="max-w-6xl mx-auto space-y-6">
-        
+    <div className="flex-1 overflow-y-auto bg-[#fafbfc]">
+      <div className="max-w-6xl mx-auto p-6 pb-10 space-y-5">
+
+        {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-on-surface tracking-tight">Command Dashboard</h2>
-            <p className="text-on-surface-variant mt-1">Overview of today's operations and AI-driven insights.</p>
+            <h2 className="text-2xl font-bold text-on-surface tracking-tight">Command Center</h2>
+            <p className="text-sm text-on-surface-variant mt-0.5">
+              {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
           </div>
-          <div className="text-sm font-semibold text-on-surface-variant bg-surface border border-outline-variant px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm">
-            <CalendarDays className="w-4 h-4" />
-            {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-          </div>
+          <button
+            onClick={() => fetchData(true)}
+            className="flex items-center gap-2 text-sm font-bold text-[#1e1a8a] bg-white border border-outline-variant px-4 py-2 rounded-xl hover:shadow-md transition-all"
+            disabled={refreshing}
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
         </div>
 
-        {/* Top Metric Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <Card className="p-4 flex flex-col justify-between h-32 border-outline-variant shadow-sm hover:shadow-md transition-all hover:-translate-y-1 bg-white">
-            <div className="flex justify-between items-start">
-              <span className="text-xs font-bold text-outline uppercase tracking-wider">Weekly Labor Cost</span>
-              <DollarSign className="w-4 h-4 text-[#8b5cf6]" />
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="p-4 bg-gradient-to-br from-[#1e1a8a] to-[#312e9e] border-0 shadow-lg text-white overflow-hidden relative">
+            <div className="absolute -right-4 -top-4 w-20 h-20 bg-white/5 rounded-full" />
+            <div className="flex justify-between items-start mb-3 relative">
+              <span className="text-[10px] font-bold text-white/60 uppercase tracking-wider">Weekly Cost</span>
+              <DollarSign className="w-4 h-4 text-white/40" />
             </div>
-            <div>
-              <div className="text-3xl font-extrabold text-[#1e1a8a]">₹{data.totalCost?.toLocaleString('en-IN')}</div>
-              {/* Budget Progress Bar */}
-              <div className="w-full bg-surface-variant h-1.5 rounded-full mt-3 overflow-hidden">
-                <div 
-                  className={`h-full rounded-full transition-all ${data.totalCost > 120000 ? 'bg-error' : 'bg-[#8b5cf6]'}`} 
-                  style={{ width: `${Math.min((data.totalCost / 120000) * 100, 100)}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-between text-[9px] font-bold text-outline uppercase tracking-wider mt-1 leading-none">
-                <span>Spent: {Math.round((data.totalCost / 120000) * 100)}%</span>
-                <span>Cap: ₹1,20,000</span>
-              </div>
+            <div className="text-2xl font-extrabold text-white">₹{data.totalCost?.toLocaleString('en-IN')}</div>
+            <div className="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
+              <div className="bg-white h-full rounded-full transition-all" style={{ width: `${Math.min((data.totalCost / 120000) * 100, 100)}%` }} />
+            </div>
+            <div className="flex justify-between text-[9px] font-bold text-white/50 mt-1">
+              <span>{Math.round((data.totalCost / 120000) * 100)}% of cap</span>
+              <span>₹1,20,000</span>
             </div>
           </Card>
 
-          <Card className="p-4 flex flex-col justify-between h-32 border border-success/20 bg-success/5 shadow-sm">
-            <div className="flex justify-between items-start">
-              <span className="text-xs font-bold text-success uppercase tracking-wider">Coverage</span>
+          <Card className="p-4 bg-white border border-success/20 shadow-sm overflow-hidden relative">
+            <div className="absolute -right-2 -top-2 w-14 h-14 bg-success/5 rounded-full" />
+            <div className="flex justify-between items-start mb-3">
+              <span className="text-[10px] font-bold text-success uppercase tracking-wider">Coverage</span>
               <CheckCircle2 className="w-4 h-4 text-success" />
             </div>
-            <div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold text-on-surface">{data.coverage}%</span>
-              </div>
-              {/* Progress bar */}
-              <div className="w-full bg-success/20 h-2 rounded-full mt-3 overflow-hidden">
-                <div className="bg-success h-full rounded-full transition-all" style={{ width: `${data.coverage}%` }}></div>
-              </div>
+            <div className="text-2xl font-extrabold text-on-surface">{data.coverage}%</div>
+            <div className="w-full bg-success/10 h-1.5 rounded-full mt-3 overflow-hidden">
+              <div className="bg-success h-full rounded-full transition-all" style={{ width: `${data.coverage}%` }} />
             </div>
+            <div className="text-[10px] font-semibold text-on-surface-variant mt-1">{data.shiftsThisWeek} shifts scheduled</div>
           </Card>
 
-          <Card className="p-4 flex flex-col justify-between h-32 border-outline-variant shadow-sm">
-            <div className="flex justify-between items-start">
-              <span className="text-xs font-bold text-outline uppercase tracking-wider">Pending Swaps</span>
+          <Card className="p-4 bg-white border border-outline-variant shadow-sm">
+            <div className="flex justify-between items-start mb-3">
+              <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Pending Swaps</span>
               <ArrowLeftRight className="w-4 h-4 text-[#d97706]" />
             </div>
-            <div>
-              <div className="text-3xl font-extrabold text-on-surface">{data.pendingSwaps}</div>
-              <div className="text-xs font-medium text-on-surface-variant mt-2">Requires approval by 5 PM</div>
+            <div className="text-2xl font-extrabold text-on-surface">{data.pendingSwaps}</div>
+            <div className="text-[10px] font-semibold text-on-surface-variant mt-3">
+              {data.pendingSwaps === 0 ? 'No pending swap requests' : 'Requires approval by 5 PM'}
             </div>
           </Card>
 
-          <Card className="p-4 flex flex-col justify-between h-32 border border-error/20 bg-[#fef2f2] shadow-sm">
-            <div className="flex justify-between items-start">
-              <span className="text-xs font-bold text-error uppercase tracking-wider">No-Show Risk</span>
-              <AlertTriangle className="w-4 h-4 text-error" />
+          <Card className={`p-4 border shadow-sm overflow-hidden relative ${data.noShowRisk > 0 ? 'bg-[#fef2f2] border-error/20' : 'bg-white border-outline-variant'}`}>
+            <div className="flex justify-between items-start mb-3">
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${data.noShowRisk > 0 ? 'text-error' : 'text-outline'}`}>Critical Alerts</span>
+              <AlertTriangle className={`w-4 h-4 ${data.noShowRisk > 0 ? 'text-error' : 'text-outline-variant'}`} />
             </div>
-            <div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold text-error">{data.noShowRisk}</span>
-                <span className="text-xs font-bold text-error bg-error/10 px-1.5 py-0.5 rounded">High Probability</span>
-              </div>
-              <button className="text-xs font-bold text-error hover:underline mt-2 flex items-center gap-1">
-                Review AI Mitigation →
-              </button>
+            <div className={`text-2xl font-extrabold ${data.noShowRisk > 0 ? 'text-error' : 'text-on-surface'}`}>{data.noShowRisk}</div>
+            <div className="text-[10px] font-semibold text-on-surface-variant mt-3">
+              {data.noShowRisk === 0 ? 'All clear! No active risks' : `${data.noShowRisk} action${data.noShowRisk > 1 ? 's' : ''} required`}
             </div>
           </Card>
         </div>
 
-        {/* Live Timeline */}
-        <Card className="col-span-full shadow-sm border-outline-variant animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150 fill-mode-both">
-          <CardHeader className="py-4">
-            <CardTitle className="text-lg flex items-center gap-2">
-              Today's Live Timeline 
-              <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span>
-            </CardTitle>
-            <div className="flex gap-4 text-xs font-semibold text-outline uppercase tracking-wider">
-              <span className="flex items-center gap-1"><div className="w-2 h-2 bg-primary rounded-full"></div> Front Desk</span>
-              <span className="flex items-center gap-1"><div className="w-2 h-2 bg-secondary rounded-full"></div> Support</span>
+        {/* Interactive Timeline */}
+        <Card className="border-outline-variant/40 shadow-sm overflow-hidden">
+          <CardHeader className="py-4 border-b border-outline-variant/40 bg-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#1e1a8a]" />
+                  Shift Timeline
+                  {selectedDay === 0 && <span className="w-2 h-2 rounded-full bg-success animate-pulse ml-1" />}
+                </CardTitle>
+                <p className="text-xs text-on-surface-variant mt-0.5">Click a day to view its shift schedule</p>
+              </div>
+              <div className="text-xs font-semibold text-on-surface-variant bg-surface-variant px-3 py-1.5 rounded-lg">
+                {selectedDayShifts.length} shift{selectedDayShifts.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
+            {/* Day Selector */}
+            <div className="flex gap-1.5 mt-4 overflow-x-auto pb-1">
+              {data.weekDays.map((day, idx) => {
+                const dayShifts = data.timelineByDay[idx] || [];
+                const isActive = idx === selectedDay;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedDay(idx)}
+                    className={`flex flex-col items-center px-3 py-2 rounded-xl border transition-all shrink-0 ${
+                      isActive
+                        ? 'bg-[#1e1a8a] border-[#1e1a8a] text-white shadow-md'
+                        : 'bg-white border-outline-variant text-on-surface hover:border-[#1e1a8a]/30 hover:bg-[#1e1a8a]/5'
+                    }`}
+                  >
+                    <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? 'text-white/70' : 'text-outline'}`}>{day.label}</span>
+                    <span className={`text-base font-extrabold leading-tight ${isActive ? 'text-white' : 'text-on-surface'}`}>{day.date}</span>
+                    {dayShifts.length > 0 && (
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full mt-0.5 ${
+                        isActive ? 'bg-white/20 text-white' : 'bg-[#14b8a6]/10 text-[#0d9488]'
+                      }`}>
+                        {dayShifts.length}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </CardHeader>
-          <CardContent className="px-0 pt-2 pb-6">
-            {data.timeline.length === 0 ? (
-              <div className="py-12 flex flex-col items-center justify-center text-center">
+
+          <CardContent className="p-0 bg-white">
+            {selectedDayShifts.length === 0 ? (
+              <div className="py-12 flex flex-col items-center justify-center text-center px-4">
                 <CalendarDays className="w-10 h-10 text-outline-variant mb-3" />
-                <h4 className="text-sm font-bold text-on-surface">No shifts scheduled today</h4>
-                <p className="text-xs text-on-surface-variant max-w-xs mt-1">When shifts are created for today, they will appear on this timeline.</p>
+                <h4 className="text-sm font-bold text-on-surface">
+                  No shifts for {data.weekDays[selectedDay]?.label || 'this day'}
+                </h4>
+                <p className="text-xs text-on-surface-variant max-w-xs mt-1">
+                  Generate and publish a schedule from the AI Generator to see shifts here.
+                </p>
               </div>
             ) : (
-              <>
-                {/* Timeline Grid */}
-                <div className="relative border-b border-outline-variant pb-2">
-                  <div className="flex px-6 text-xs font-bold text-outline uppercase tracking-wider">
-                    <div className="w-[120px] shrink-0">Employee</div>
-                    <div className="flex-1 flex justify-between relative px-2">
-                      <span>6 AM</span>
-                      <span>9 AM</span>
-                      <span className="text-error font-extrabold relative z-10">12 PM<div className="absolute top-4 left-1/2 w-0.5 h-64 bg-error/30 -translate-x-1/2"></div></span>
-                      <span>3 PM</span>
-                      <span>6 PM</span>
-                      <span>9 PM</span>
-                      <span>12 AM</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Timeline Rows */}
-                <div className="flex flex-col mt-2">
-                  {data.timeline.map((row) => (
-                    <div key={row.id} className="flex px-6 py-3 hover:bg-surface-variant/30 items-center border-b border-outline-variant/50 last:border-0 relative">
-                      <div className="w-[120px] shrink-0 flex items-center gap-2">
-                        <span className="text-sm font-bold text-on-surface truncate">{row.name}</span>
-                        {row.hasAlert && <AlertTriangle className="w-3.5 h-3.5 text-error shrink-0" />}
-                      </div>
-                      <div className="flex-1 relative h-10 mx-2 bg-surface-variant/30 rounded border border-outline-variant/30">
-                        {/* Render the block */}
-                        <div 
-                          className={`absolute top-1 bottom-1 rounded-md border flex items-center px-3 shadow-sm ${row.color} border-current/20`}
-                          style={{ 
-                            left: `${((row.start - 6) / 18) * 100}%`, 
-                            width: `${((row.end - row.start) / 18) * 100}%` 
-                          }}
-                        >
-                          <span className="text-xs font-bold truncate">{row.label} ({row.role})</span>
-                        </div>
-                      </div>
+              <div className="p-5">
+                {/* Time ruler */}
+                <div className="flex pl-36 pr-2 mb-2">
+                  {timeLabels.map((label, i) => (
+                    <div key={i} className="flex-1 text-[9px] font-bold text-outline uppercase tracking-wider text-center">
+                      {label}
                     </div>
                   ))}
                 </div>
-              </>
+
+                {/* Shift rows */}
+                <div className="space-y-2 relative">
+                  {/* Current time marker — only show for today */}
+                  {selectedDay === 0 && currentHour >= HOUR_START && currentHour <= HOUR_START + HOUR_SPAN && (
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 bg-error/60 z-10 pointer-events-none"
+                      style={{ left: `calc(144px + ${((currentHour - HOUR_START) / HOUR_SPAN) * (100 - 0)}% * (100% - 144px) / 100)` }}
+                    >
+                      <div className="w-2.5 h-2.5 bg-error rounded-full -ml-1 -mt-0.5" />
+                    </div>
+                  )}
+
+                  {selectedDayShifts.map((row, i) => {
+                    const leftPct = Math.max(0, ((row.startHour - HOUR_START) / HOUR_SPAN) * 100);
+                    const widthPct = Math.max(1, ((row.endHour - row.startHour) / HOUR_SPAN) * 100);
+                    const barColor = getShiftBarColor(row.role, row.clockStatus);
+
+                    return (
+                      <div key={row.id} className="flex items-center gap-3 group">
+                        {/* Employee label */}
+                        <div className="w-36 shrink-0 flex items-center gap-2">
+                          <Avatar name={row.name} size="sm" />
+                          <div className="overflow-hidden">
+                            <div className="text-xs font-bold text-on-surface truncate">{row.name}</div>
+                            <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider inline-block mt-0.5 border ${getRoleColor(row.role)}`}>
+                              {row.role?.replace('_', ' ')}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Timeline bar */}
+                        <div className="flex-1 relative h-10 bg-surface-variant/20 rounded-lg border border-outline-variant/20 overflow-hidden">
+                          {/* Grid lines */}
+                          {[0, 1, 2, 3, 4, 5].map(g => (
+                            <div key={g} className="absolute inset-y-0 border-l border-outline-variant/15" style={{ left: `${(g / 6) * 100}%` }} />
+                          ))}
+
+                          {/* Shift bar */}
+                          <div
+                            className={`absolute top-1 bottom-1 rounded-md border ${barColor} text-white flex items-center px-2 shadow-sm transition-all group-hover:brightness-110 cursor-default`}
+                            style={{ left: `${leftPct}%`, width: `${widthPct}%`, minWidth: '2rem' }}
+                            title={`${row.name}: ${row.startStr} – ${row.endStr}`}
+                          >
+                            <span className="text-[10px] font-bold truncate opacity-90">
+                              {row.startStr} – {row.endStr}
+                            </span>
+                            {row.clockStatus === 'CLOCKED_IN' && (
+                              <span className="ml-1 shrink-0 w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Legend */}
+                <div className="flex gap-4 mt-4 pt-3 border-t border-outline-variant/30">
+                  {[
+                    { color: 'bg-[#1e1a8a]', label: 'Cashier' },
+                    { color: 'bg-[#7c3aed]', label: 'Stocker' },
+                    { color: 'bg-[#14b8a6]', label: 'Active (Clocked In)' },
+                    { color: 'bg-surface-variant border border-outline-variant', label: 'Completed' }
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-[10px] font-semibold text-outline">
+                      <div className={`w-2.5 h-2.5 rounded-sm ${item.color}`} />
+                      {item.label}
+                    </div>
+                  ))}
+                  {selectedDay === 0 && (
+                    <div className="flex items-center gap-1.5 text-[10px] font-semibold text-error ml-auto">
+                      <div className="w-0.5 h-3.5 bg-error/60 rounded" />
+                      Current Time
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* Bottom Split */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
           {/* Critical Alerts */}
-          <Card className="border border-error/30 shadow-sm overflow-hidden">
-            <CardHeader className="bg-[#fef2f2] border-b border-error/20 py-4">
-              <div className="flex items-center gap-2 text-error">
-                <AlertTriangle className="w-5 h-5" />
-                <CardTitle className="text-error text-lg">Critical Alerts</CardTitle>
+          <Card className="border border-error/20 shadow-sm overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-[#fef2f2] to-[#fff5f5] border-b border-error/15 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-error">
+                  <AlertTriangle className="w-4 h-4" />
+                  <CardTitle className="text-error text-base">Critical Alerts</CardTitle>
+                </div>
+                {data.alerts.length > 0 && (
+                  <span className="bg-error text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+                    {data.alerts.length} Action{data.alerts.length > 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
-              {data.alerts.length > 0 && <span className="bg-error text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm">{data.alerts.length} Action{data.alerts.length > 1 ? 's' : ''} Required</span>}
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 max-h-80 overflow-y-auto">
               {data.alerts.length === 0 ? (
                 <div className="p-8 flex flex-col items-center justify-center text-center">
                   <CheckCircle2 className="w-10 h-10 text-success/50 mb-3" />
-                  <h4 className="text-sm font-bold text-on-surface">All clear!</h4>
-                  <p className="text-xs text-on-surface-variant max-w-xs mt-1">No critical alerts or no-show risks detected right now.</p>
+                  <h4 className="text-sm font-bold text-on-surface">All Clear!</h4>
+                  <p className="text-xs text-on-surface-variant mt-1">No critical alerts or no-show risks right now.</p>
                 </div>
               ) : (
-              data.alerts.map(alert => (
-                  <div key={alert.id} className="p-5 flex items-center justify-between border-b border-outline-variant last:border-0 hover:bg-surface-variant/20 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <Avatar name={alert.name} size="lg" className={alert.type === 'leave' ? 'border-[#f59e0b]/30' : 'border-error/30'} />
+                data.alerts.map(alert => (
+                  <div
+                    key={alert.id}
+                    className="p-4 flex items-center justify-between border-b border-outline-variant/40 last:border-0 hover:bg-surface-variant/10 transition-colors cursor-pointer"
+                    onClick={() => setExpandedAlert(expandedAlert === alert.id ? null : alert.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar name={alert.name} size="md" className={alert.type === 'leave' ? 'border-[#f59e0b]/30' : 'border-error/30'} />
                       <div>
-                        <h4 className="text-base font-bold text-on-surface flex items-center gap-2">
-                          {alert.name} 
+                        <h4 className="text-sm font-bold text-on-surface flex items-center gap-2 flex-wrap">
+                          {alert.name}
                           {alert.type === 'leave' ? (
-                            <span className="text-xs font-bold text-[#b45309] bg-[#fffbeb] px-2 py-0.5 rounded border border-[#fcd34d]">Pending Leave</span>
+                            <span className="text-[9px] font-bold text-[#b45309] bg-[#fffbeb] px-2 py-0.5 rounded-full border border-[#fcd34d]">Pending Leave</span>
                           ) : (
-                            <span className="text-xs font-bold text-error bg-error/10 px-2 py-0.5 rounded">High No-Show Risk</span>
+                            <span className="text-[9px] font-bold text-error bg-error/10 px-2 py-0.5 rounded-full">High No-Show Risk</span>
                           )}
                         </h4>
-                        <p className="text-sm text-on-surface-variant font-medium">
+                        <p className="text-xs text-on-surface-variant font-medium mt-0.5">
                           {alert.type === 'leave' ? (
-                            <><CalendarRange className="w-3.5 h-3.5 inline mr-1" />{alert.time} • {alert.role}</>
+                            <><CalendarRange className="w-3 h-3 inline mr-1" />{alert.time} • {alert.role}</>
                           ) : (
                             <>{alert.time} • {alert.role}</>
                           )}
                         </p>
+                        {expandedAlert === alert.id && (
+                          <p className="text-[10px] text-outline mt-1.5">
+                            {alert.type === 'leave'
+                              ? 'Go to Alert Center → Pending Leave Requests to approve or reject.'
+                              : `No-show risk: ${Math.round(alert.noShowRisk * 100)}%. Use "Find Replacement" in Alert Center.`}
+                          </p>
+                        )}
                       </div>
                     </div>
                     {alert.type === 'leave' ? (
-                      <span className="text-xs font-bold text-[#b45309] bg-[#fffbeb] px-3 py-1.5 rounded-lg border border-[#fcd34d]">Review in Alert Center</span>
+                      <span className="text-[9px] font-bold text-[#b45309] bg-[#fffbeb] px-2.5 py-1.5 rounded-lg border border-[#fcd34d] whitespace-nowrap">Review →</span>
                     ) : (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleMessage(alert.name)}
-                        className="border-outline-variant text-on-surface hover:text-primary hover:border-primary font-bold shadow-sm bg-white"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); handleMessage(alert.name); }}
+                        className="border-outline-variant text-on-surface hover:text-[#1e1a8a] hover:border-[#1e1a8a]/30 font-bold shadow-sm bg-white whitespace-nowrap"
                       >
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        Message
+                        <MessageCircle className="w-3.5 h-3.5 mr-1.5" />Message
                       </Button>
                     )}
                   </div>
@@ -350,35 +514,56 @@ export function CommandCenter() {
           </Card>
 
           {/* Fairness Snapshot */}
-          <Card className="shadow-sm border-outline-variant">
-            <CardHeader className="py-4">
-              <CardTitle className="text-lg">Fairness Snapshot</CardTitle>
-              <button className="text-sm font-bold text-primary hover:underline">View Full Report</button>
+          <Card className="shadow-sm border-outline-variant/40 overflow-hidden">
+            <CardHeader className="py-4 border-b border-outline-variant/40">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-[#8b5cf6]" />Fairness Snapshot
+                </CardTitle>
+                <span className="text-[10px] font-bold text-outline bg-surface-variant px-2.5 py-1 rounded-lg uppercase tracking-wider">This Week</span>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {data.fairness.length === 0 ? (
-                <div className="py-6 flex flex-col items-center justify-center text-center">
-                  <h4 className="text-sm font-bold text-outline-variant">No data available</h4>
+                <div className="p-8 flex flex-col items-center justify-center text-center">
+                  <Users className="w-10 h-10 text-outline-variant mb-3" />
+                  <h4 className="text-sm font-bold text-on-surface">No data yet</h4>
+                  <p className="text-xs text-on-surface-variant mt-1">Generate and publish a schedule to see fairness metrics.</p>
                 </div>
               ) : (
-                <>
-                  <div className="mb-2">
-                    <h4 className="text-xs font-bold text-outline uppercase tracking-wider">Overtime distribution this month (Top 5)</h4>
+                <div>
+                  <div className="px-5 py-3 border-b border-outline-variant/40">
+                    <p className="text-[10px] font-bold text-outline uppercase tracking-wider">Top 5 by Hours Worked</p>
                   </div>
-                  {data.fairness.map((f, i) => (
-                    <div key={i} className="flex items-center justify-between py-2 border-b border-outline-variant/50">
-                      <span className="text-sm font-bold text-on-surface">{f.name}</span>
-                      <span className="text-sm font-semibold text-on-surface-variant">
-                        {f.hours} hrs <span className="text-xs text-outline">(₹{f.wage.toLocaleString()})</span>
-                      </span>
-                    </div>
-                  ))}
-                </>
+                  {data.fairness.map((f, i) => {
+                    const maxHours = Math.max(...data.fairness.map(x => x.hours), 1);
+                    const pct = Math.round((f.hours / maxHours) * 100);
+                    return (
+                      <div key={i} className="flex items-center px-5 py-3 border-b border-outline-variant/30 last:border-0 hover:bg-surface-variant/10 transition-colors">
+                        <span className="text-sm font-extrabold text-outline w-5 shrink-0">{i + 1}</span>
+                        <Avatar name={f.name} size="sm" className="mx-3 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-bold text-on-surface truncate">{f.name}</span>
+                            <span className="text-xs font-bold text-on-surface-variant ml-2 shrink-0">{f.hours}h</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${i === 0 ? 'bg-[#8b5cf6]' : i === 1 ? 'bg-[#1e1a8a]' : 'bg-[#14b8a6]'}`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-semibold text-outline ml-3 shrink-0">₹{f.wage.toLocaleString()}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </CardContent>
           </Card>
-        </div>
 
+        </div>
       </div>
     </div>
   );
