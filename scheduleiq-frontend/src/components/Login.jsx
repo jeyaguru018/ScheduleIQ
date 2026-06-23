@@ -52,7 +52,7 @@ export function Login({ onLoginSuccess }) {
       clearTimeout(wakeTimer);
       setServerWakingUp(false);
       const msg = err.message?.includes('timed out')
-        ? 'Server is starting up (free tier). Please try again in 30 seconds.'
+        ? 'Server is starting up (free tier). Please try again in 90 seconds.'
         : err.message?.includes('Failed to fetch') || err.message?.includes('fetch')
         ? 'Cannot reach server. Check your internet or try again in a moment.'
         : err.message || 'Invalid email or password.';
@@ -82,7 +82,7 @@ export function Login({ onLoginSuccess }) {
       clearTimeout(wakeTimer);
       setServerWakingUp(false);
       const msg = err.message?.includes('timed out')
-        ? 'Server is starting up (free tier). Please wait 30 seconds and try again.'
+        ? 'Server is starting up (free tier). Please wait 90 seconds and try again.'
         : err.message?.includes('fetch')
         ? 'Cannot reach server. Try again in a moment.'
         : err.message || 'Registration failed. Please check your details.';
@@ -264,7 +264,7 @@ export function Login({ onLoginSuccess }) {
                 {loading && serverWakingUp && (
                   <div className="flex items-center gap-2 bg-[#fffbeb] border border-[#fcd34d] rounded-xl p-3 text-xs font-semibold text-[#b45309] animate-pulse">
                     <span className="text-base">⏳</span>
-                    Server is waking up (free tier cold start). This can take up to 60 seconds on first login. Please wait...
+                    Server is waking up (free tier cold start). This can take up to 90 seconds on first login. Please wait...
                   </div>
                 )}
 
