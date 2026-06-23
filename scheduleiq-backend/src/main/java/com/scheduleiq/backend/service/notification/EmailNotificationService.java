@@ -4,6 +4,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -17,13 +18,19 @@ public class EmailNotificationService {
 
     private final JavaMailSender mailSender;
 
+    @Value("${spring.mail.username:noreply@scheduleiq.com}")
+    private String senderEmail;
+
+    @Value("${app.frontend-url:https://schedule-iq.vercel.app}")
+    private String frontendUrl;
+
     public void sendEmail(String to, String subject, String contentHtml) {
         java.util.concurrent.CompletableFuture.runAsync(() -> {
             try {
                 MimeMessage message = mailSender.createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
                 
-                helper.setFrom("jeyaguru018@gmail.com");
+                helper.setFrom(senderEmail);
                 helper.setTo(to);
                 helper.setSubject(subject);
                 helper.setText(contentHtml, true);
@@ -46,7 +53,7 @@ public class EmailNotificationService {
                 + "<p>Hi " + name + ",</p>"
                 + "<p>Your manager has registered your account in ScheduleIQ. You are now authorized to sign in and manage your work schedule.</p>"
                 + "<p style='margin-bottom: 25px;'>To access your account, click the link below to log in directly or use Google Sign-in:</p>"
-                + "<a href='http://localhost:5173/login' style='background-color: #2b25b3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Access Dashboard</a>"
+                + "<a href='" + frontendUrl + "/login' style='background-color: #2b25b3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Access Dashboard</a>"
                 + "<p style='margin-top: 25px; font-size: 0.9em; color: #666;'>If you use Google Sign-In, please log in with your corporate/approved email: <strong>" + email + "</strong>.</p>"
                 + "<hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;' />"
                 + "<p style='font-size: 0.8em; color: #999;'>This is an automated notification. Please contact your store manager if you did not request this invitation.</p>"
@@ -63,7 +70,7 @@ public class EmailNotificationService {
                 + "<p>Hi " + name + ",</p>"
                 + "<p>A new shift schedule has been published for the upcoming week <strong>" + scheduleWeek + "</strong>.</p>"
                 + "<p>Please log in to your dashboard to review your assigned shifts, request swaps, or check team schedules.</p>"
-                + "<a href='http://localhost:5173/login' style='background-color: #2b25b3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>View My Shifts</a>"
+                + "<a href='" + frontendUrl + "/login' style='background-color: #2b25b3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>View My Shifts</a>"
                 + "<hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;' />"
                 + "<p style='font-size: 0.8em; color: #999;'>ScheduleIQ Automated Notifications</p>"
                 + "</div></body></html>";
@@ -82,7 +89,7 @@ public class EmailNotificationService {
                 + message
                 + "</div>"
                 + "<p>Please log in to the Command Center to resolve this issue or find a replacement employee.</p>"
-                + "<a href='http://localhost:5173/login' style='background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Go to Command Center</a>"
+                + "<a href='" + frontendUrl + "/login' style='background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Go to Command Center</a>"
                 + "<hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;' />"
                 + "<p style='font-size: 0.8em; color: #999;'>ScheduleIQ Automated Notifications</p>"
                 + "</div></body></html>";

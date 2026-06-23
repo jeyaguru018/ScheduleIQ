@@ -61,7 +61,8 @@ public class SecurityConfig {
                 // Actuator: health check is public; others require auth
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/actuator/**").hasRole("MANAGER")
-                // Manager-only endpoints
+                // Manager-only endpoints vs Employee/Shared endpoints
+                .requestMatchers("/api/schedule/shifts", "/api/schedule/shifts/*/clock-in", "/api/schedule/shifts/*/clock-out").authenticated()
                 .requestMatchers("/api/schedule/**").hasRole("MANAGER")
                 .requestMatchers(HttpMethod.DELETE, "/api/employees/**").hasRole("MANAGER")
                 // All other API calls need a valid JWT

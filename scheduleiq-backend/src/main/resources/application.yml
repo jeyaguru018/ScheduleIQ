@@ -10,11 +10,12 @@ spring:
     name: scheduleiq-backend
 
   datasource:
-    # URL for local PostgreSQL database. We will auto-connect to a database named 'scheduleiq_db'
+    # URL for local/production PostgreSQL database.
+    # Set SPRING_DATASOURCE_URL in your environment (Render dashboard, .env file, etc.)
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/scheduleiq_db}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    # NOTE: If your local PostgreSQL has a different password, change it below!
-    password: ${SPRING_DATASOURCE_PASSWORD:#Jeyaguru064}
+    # SECURITY: Never hardcode passwords. Set SPRING_DATASOURCE_PASSWORD in your environment.
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       # Connection pool tuned for 10,000-user concurrent workloads
@@ -48,11 +49,12 @@ spring:
       spec: maximumSize=500,expireAfterWrite=300s  # 5-minute TTL, max 500 entries
 
   # SMTP Mail settings using Gmail App Password
+  # SECURITY: Set MAIL_USERNAME and MAIL_PASSWORD in your environment variables.
   mail:
     host: smtp.gmail.com
     port: 587
-    username: jeyaguru018@gmail.com
-    password: ${MAIL_PASSWORD:dummy_password}
+    username: ${MAIL_USERNAME:noreply@scheduleiq.com}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -64,13 +66,14 @@ spring:
             enable: true
 
   # Security OAuth2 Google login settings
+  # SECURITY: Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your environment variables.
   security:
     oauth2:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID:dummy_id}
-            client-secret: ${GOOGLE_CLIENT_SECRET:dummy_secret}
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
             scope:
               - email
               - profile
@@ -87,11 +90,14 @@ spring:
 # Custom properties
 app:
   jwt:
-    # Secret key for JWT auth tokens. 256-bit safe secret
-    secret: dGhpc2lzYW11bHRpcGxlcmVnaW9uYWx3b3JrZm9yY2VvcHRpbWl6YXRpb25zZWN1cml0eWtleTI1NmJpdHM=
+    # SECURITY: JWT secret must be set via environment variable in production.
+    # Generate a secure 256-bit key: openssl rand -base64 32
+    secret: ${JWT_SECRET}
     expiration-ms: 86400000 # 24 hours
   ml-service:
     url: ${ML_SERVICE_URL:http://localhost:8000}
+  # Frontend URL for links in outgoing emails (e.g., welcome, shift published)
+  frontend-url: ${FRONTEND_URL:https://schedule-iq.beta.vercel.app}
 
 # Actuator: Production health, metrics, and Prometheus exposure
 management:

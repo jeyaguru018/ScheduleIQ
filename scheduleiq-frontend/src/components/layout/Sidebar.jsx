@@ -34,10 +34,13 @@ export function Sidebar({ currentPage, setCurrentPage, role, user, onLogout }) {
   const links = role === 'MANAGER' ? managerLinks : employeeLinks;
 
   return (
-    <aside className="w-64 flex flex-col bg-surface border-r border-outline-variant h-full shrink-0">
+    <aside
+      className="w-64 flex flex-col bg-surface border-r border-outline-variant h-full shrink-0"
+      style={{ boxShadow: '2px 0 12px rgba(0,0,0,0.04), inset -1px 0 0 rgba(0,0,0,0.06)' }}
+    >
       {/* Brand */}
       <div className="h-16 flex items-center px-6 border-b border-outline-variant shrink-0">
-        <div className="w-8 h-8 bg-primary rounded flex items-center justify-center mr-3">
+        <div className="w-8 h-8 bg-primary rounded flex items-center justify-center mr-3 shadow-3d-btn-primary">
           <Sparkles className="w-5 h-5 text-on-primary" />
         </div>
         <div>
@@ -56,10 +59,10 @@ export function Sidebar({ currentPage, setCurrentPage, role, user, onLogout }) {
               key={link.id}
               onClick={() => setCurrentPage(link.id)}
               className={cn(
-                "flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-label-md font-label-md font-semibold transition-all",
+                "flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-label-md font-label-md font-semibold transition-all active-press",
                 isActive 
-                  ? "bg-primary-container/40 text-primary border border-primary/20 shadow-sm" 
-                  : "text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface"
+                  ? "bg-primary-container/40 text-primary border border-primary/20 shadow-3d-active" 
+                  : "text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface hover:shadow-3d-btn"
               )}
             >
               <Icon className={cn("w-5 h-5", isActive ? "text-primary" : "text-on-surface-variant")} />
@@ -71,9 +74,9 @@ export function Sidebar({ currentPage, setCurrentPage, role, user, onLogout }) {
 
       {/* User Profile Footer */}
       <div className="p-4 border-t border-outline-variant shrink-0">
-        <div className="bg-surface-variant/50 rounded-xl p-3 flex flex-col gap-3">
+        <div className="bg-surface-variant/50 rounded-xl p-3 flex flex-col gap-3 shadow-3d-card">
           <div className="flex items-center gap-3">
-            <Avatar name={user?.name} size="md" />
+            <Avatar name={user?.name} size="md" className="shadow-3d-btn" />
             <div className="flex-1 min-w-0 text-left">
               <p className="text-label-md font-bold text-on-surface truncate">{user?.name || 'User'}</p>
               <p className="text-body-sm text-on-surface-variant truncate">{user?.role === 'MANAGER' ? 'Ops Director' : user?.role}</p>
@@ -81,7 +84,7 @@ export function Sidebar({ currentPage, setCurrentPage, role, user, onLogout }) {
           </div>
           <button 
             onClick={onLogout}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-error hover:bg-error-container/50 transition-colors text-label-md font-semibold"
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-error hover:bg-error-container/50 transition-colors text-label-md font-semibold active-press shadow-3d-btn"
           >
             <LogOut className="w-4 h-4" />
             Sign Out

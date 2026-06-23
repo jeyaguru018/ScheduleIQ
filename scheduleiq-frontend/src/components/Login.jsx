@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Mail, Lock, CheckCircle2, Clock, Zap, User, DollarSign } from 'lucide-react';
+import { Sparkles, Mail, Lock, CheckCircle2, Clock, Zap, User, DollarSign, Eye, EyeOff } from 'lucide-react';
 import { Input } from './common/Input';
 import { Button } from './common/Button';
 import * as api from '../api';
@@ -18,6 +18,8 @@ export function Login({ onLoginSuccess }) {
   const [regRate, setRegRate] = useState('250');
   const [regHours, setRegHours] = useState('40');
 
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [serverWakingUp, setServerWakingUp] = useState(false);
@@ -31,7 +33,7 @@ export function Login({ onLoginSuccess }) {
     const err = params.get('error');
     if (err === 'email_not_approved') {
       const targetEmail = params.get('email');
-      showToast(`Access denied. jeyaguru018@gmail.com (or ${targetEmail || 'Google account'}) has not been approved or registered by a manager yet.`, 'error', 5000);
+      showToast(`Access denied. Your Google account (${targetEmail || 'this Google account'}) has not been registered by a manager yet. Please ask your manager to create your account first.`, 'error', 5000);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [showToast]);
@@ -229,13 +231,24 @@ export function Login({ onLoginSuccess }) {
                   <Input 
                     label="Password" 
                     id="password" 
-                    type="password" 
+                    type={showLoginPassword ? 'text' : 'password'}
                     icon={Lock}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
+                    className="pr-12"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(v => !v)}
+                    className="absolute right-3 top-[2.1rem] text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showLoginPassword
+                      ? <EyeOff className="w-5 h-5" />
+                      : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
 
                 <Button 
@@ -298,16 +311,29 @@ export function Login({ onLoginSuccess }) {
                   required
                 />
                 
-                <Input 
-                  label="Password" 
-                  id="regPassword" 
-                  type="password" 
-                  icon={Lock}
-                  value={regPassword}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="relative">
+                  <Input 
+                    label="Password" 
+                    id="regPassword" 
+                    type={showRegPassword ? 'text' : 'password'}
+                    icon={Lock}
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="pr-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegPassword(v => !v)}
+                    className="absolute right-3 top-[2.1rem] text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label={showRegPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showRegPassword
+                      ? <EyeOff className="w-5 h-5" />
+                      : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
 
                 <div className="flex gap-4">
                   <div className="flex-1">

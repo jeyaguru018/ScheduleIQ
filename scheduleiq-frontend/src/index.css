@@ -54,4 +54,63 @@
       linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   }
+
+  /* ── 3D Polish Utilities ─────────────────────────────────────────────────── */
+
+  /* Elevated card with subtle bottom border shadow (like floating on a surface) */
+  .shadow-3d-card {
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.07),
+      0 4px 12px rgba(0, 0, 0, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.04);
+  }
+
+  /* Neutral 3D button appearance */
+  .shadow-3d-btn {
+    box-shadow:
+      0 3px 6px rgba(0, 0, 0, 0.08),
+      0 1px 2px rgba(0, 0, 0, 0.06),
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.5),
+      inset 0 -2.5px 0 rgba(0, 0, 0, 0.12);
+    transition: transform 80ms ease, box-shadow 80ms ease;
+  }
+
+  /* Colored primary 3D button */
+  .shadow-3d-btn-primary {
+    box-shadow:
+      0 4px 10px rgba(30, 26, 138, 0.25),
+      0 2px 4px rgba(30, 26, 138, 0.15),
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.25),
+      inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+    transition: transform 80ms ease, box-shadow 80ms ease;
+  }
+
+  /* Active press state — makes buttons feel "clickable" */
+  .active-press:active {
+    transform: translateY(2px) !important;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.1),
+      inset 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  /* Subtle inner glow for sidebar active items */
+  .shadow-3d-active {
+    box-shadow:
+      inset 0 1px 3px rgba(30, 26, 138, 0.12),
+      0 0 0 1.5px rgba(30, 26, 138, 0.15);
+  }
+
+  /* Floating card hover lift effect */
+  .hover-lift {
+    transition: transform 150ms ease, box-shadow 150ms ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.1),
+      0 2px 6px rgba(0, 0, 0, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
 }
+

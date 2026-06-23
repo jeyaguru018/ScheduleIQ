@@ -7,6 +7,7 @@ import { Header } from './components/layout/Header';
 import { ProfileModal } from './components/ProfileModal';
 import { Login } from './components/Login';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { ConfirmLogoutModal } from './components/common/ConfirmLogoutModal';
 
 // Heavy page components — lazy loaded on demand (reduces initial bundle by ~60%)
 const CommandCenter    = lazy(() => import('./components/CommandCenter').then(m => ({ default: m.CommandCenter })));
@@ -37,6 +38,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [toast, setToast] = useState(null);
 
   // Global listener for live WebSocket alerts
@@ -100,7 +102,14 @@ function App() {
     setCurrentPage(userData.role === 'MANAGER' ? 'dashboard' : 'employee_view');
   };
 
+  // Opens the confirmation modal instead of logging out immediately
   const handleLogout = () => {
+    setIsLogoutConfirmOpen(true);
+  };
+
+  // Actually performs the logout after user confirms
+  const handleConfirmLogout = () => {
+    setIsLogoutConfirmOpen(false);
     api.logout();
     setUser(null);
   };
@@ -128,6 +137,11 @@ function App() {
           onClose={() => setIsProfileOpen(false)} 
           user={user} 
           onUpdate={(newName) => setUser({...user, name: newName})} 
+        />
+        <ConfirmLogoutModal
+          isOpen={isLogoutConfirmOpen}
+          onConfirm={handleConfirmLogout}
+          onCancel={() => setIsLogoutConfirmOpen(false)}
         />
       </>
     );
@@ -189,6 +203,11 @@ function App() {
         </div>
       )}
 
+      <ConfirmLogoutModal
+        isOpen={isLogoutConfirmOpen}
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setIsLogoutConfirmOpen(false)}
+      />
       <ProfileModal 
         isOpen={isProfileOpen} 
         onClose={() => setIsProfileOpen(false)} 

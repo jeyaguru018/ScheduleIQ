@@ -19,12 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Slf4j
-
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -34,6 +34,27 @@ public class AuthController {
     private final UserDetailsService userDetailsService;
     private final com.scheduleiq.backend.service.notification.EmailNotificationService emailNotificationService;
 
+    // ── Input validation constants ─────────────────────────────────────────────
+    private static final int MAX_EMAIL_LENGTH    = 254;  // RFC 5321 max
+    private static final int MAX_NAME_LENGTH     = 100;
+    private static final int MAX_PASSWORD_LENGTH = 128;  // Prevent BCrypt DoS
+    private static final int MIN_PASSWORD_LENGTH = 6;
+
+    // Simple but effective email format validator
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$"
+    );
+
+    /**
+     * Sanitizes a string: trims whitespace, strips null bytes and control chars.
+     * Returns empty string if input is null.
+     */
+    private String sanitize(String input) {
+        if (input == null) return "";
+        // Remove null bytes and ASCII control characters (< 0x20 except tab/newline)
+        return input.trim().replaceAll("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]", "");
+    }
+
     /**
      * POST /api/auth/login
      * Body: { "email": "...", "password": "..." }
@@ -41,8 +62,30 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        String password = request.get("password");
+        // ── Input Validation ──────────────────────────────────────────────────
+        String email    = sanitize(request.get("email"));
+        String password = request.get("password"); // Do NOT trim passwords (may have intentional spaces)
+
+        if (email.isEmpty() || password == null || password.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Email and password are required."));
+        }
+        if (email.length() > MAX_EMAIL_LENGTH) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Email address is too long."));
+        }
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Invalid email format."));
+        }
+        if (password.length() > MAX_PASSWORD_LENGTH) {
+            // Reject oversized passwords — BCrypt has a 72-char limit; very long passwords
+            // can also be used to DoS the CPU. Return a generic error to not hint at limits.
+            log.warn("Login rejected: oversized password for [{}]", email);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid email or password."));
+        }
+        // ─────────────────────────────────────────────────────────────────────
 
         try {
             authenticationManager.authenticate(
@@ -80,7 +123,60 @@ public class AuthController {
     public ResponseEntity<?> register(
             @RequestBody Map<String, Object> request,
             @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails loggedInUser) {
-        String email = (String) request.get("email");
+
+        // ── Input Validation & Sanitization ───────────────────────────────────
+        String name     = sanitize((String) request.get("name"));
+        String email    = sanitize((String) request.get("email"));
+        String password = (String) request.get("password");
+        String roleStr  = sanitize((String) request.get("role"));
+
+        if (name.isEmpty() || email.isEmpty() || password == null || password.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Name, email, and password are all required."));
+        }
+        if (name.length() > MAX_NAME_LENGTH) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Name is too long (max 100 characters)."));
+        }
+        if (email.length() > MAX_EMAIL_LENGTH) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Email address is too long."));
+        }
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Invalid email format."));
+        }
+        if (password.length() < MIN_PASSWORD_LENGTH) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Password must be at least " + MIN_PASSWORD_LENGTH + " characters long."));
+        }
+        if (password.length() > MAX_PASSWORD_LENGTH) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Password is too long (max " + MAX_PASSWORD_LENGTH + " characters)."));
+        }
+
+        // Validate role is one of our known roles
+        Role role;
+        try {
+            role = Role.valueOf(roleStr.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Invalid role. Must be one of: MANAGER, CASHIER, STOCKER, DELIVERY_BOY, LEAD_CASHIER."));
+        }
+
+        // Validate numeric fields
+        double baseHourlyRate;
+        int maxHoursPerWeek;
+        try {
+            baseHourlyRate = Double.parseDouble(request.get("baseHourlyRate").toString());
+            maxHoursPerWeek = Integer.parseInt(request.get("maxHoursPerWeek").toString());
+            if (baseHourlyRate < 0 || baseHourlyRate > 100000) throw new NumberFormatException("rate out of range");
+            if (maxHoursPerWeek < 1 || maxHoursPerWeek > 168) throw new NumberFormatException("hours out of range");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Invalid numeric values for hourly rate or weekly hours."));
+        }
+        // ─────────────────────────────────────────────────────────────────────
 
         if (employeeRepository.findByEmail(email).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -96,12 +192,12 @@ public class AuthController {
         }
 
         Employee employee = Employee.builder()
-                .name((String) request.get("name"))
+                .name(name)
                 .email(email)
-                .password(passwordEncoder.encode((String) request.get("password")))
-                .role(Role.valueOf(((String) request.get("role")).toUpperCase()))
-                .baseHourlyRate(Double.parseDouble(request.get("baseHourlyRate").toString()))
-                .maxHoursPerWeek(Integer.parseInt(request.get("maxHoursPerWeek").toString()))
+                .password(passwordEncoder.encode(password))
+                .role(role)
+                .baseHourlyRate(baseHourlyRate)
+                .maxHoursPerWeek(maxHoursPerWeek)
                 .managerId(managerId)
                 .build();
 
