@@ -16,7 +16,8 @@ import {
   XCircle,
   RefreshCw,
   ChevronRight,
-  Zap
+  Zap,
+  Wifi
 } from 'lucide-react';
 import { SparklesIcon } from './AiGenerator';
 import { useToast } from './common/Toast';
@@ -24,12 +25,14 @@ import { Button } from './common/Button';
 import { Modal } from './common/Modal';
 import { Input } from './common/Input';
 import * as api from '../api';
+import { useScheduleUpdates, useLeaveUpdates } from '../lib/websocket';
 
 export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
   const { showToast } = useToast();
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [liveConnected, setLiveConnected] = useState(false);
   
   // Leave state
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
@@ -37,6 +40,22 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
   const [leaveReason, setLeaveReason] = useState('');
   const [submittingLeave, setSubmittingLeave] = useState(false);
   const [myLeaves, setMyLeaves] = useState([]);
+
+  // ── v2.0: Real-time WebSocket — auto-refresh when manager publishes schedule ──
+  useScheduleUpdates(useCallback((payload) => {
+    setLiveConnected(true);
+    showToast(`📅 New schedule published by your manager! Refreshing your shifts...`, 'info');
+    fetchMyShifts();
+  }, []), true);
+
+  // ── v2.0: Real-time WebSocket — auto-update leave status when approved/rejected ──
+  useLeaveUpdates(useCallback((payload) => {
+    const msg = payload.status === 'APPROVED'
+      ? '✅ Your leave request was approved!'
+      : '❌ Your leave request was declined.';
+    showToast(msg, payload.status === 'APPROVED' ? 'success' : 'error');
+    fetchMyLeaves();
+  }, []), user?.employeeId, true);
 
   useEffect(() => {
     fetchMyShifts();

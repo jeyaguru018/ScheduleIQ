@@ -122,6 +122,12 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
+        <!-- Redis: Distributed cache for multi-instance horizontal scaling (v2.0) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
         <!-- Bucket4j: Token-bucket rate limiting for abuse prevention -->
         <dependency>
             <groupId>com.bucket4j</groupId>

@@ -1,8 +1,8 @@
 version: '3.9'
 
 # ════════════════════════════════════════════════════════════════
-#  ScheduleIQ — Full Stack Docker Compose
-#  Services: PostgreSQL | Spring Boot API | Python ML | React UI
+#  ScheduleIQ v2.0 — Full Stack Docker Compose
+#  Services: PostgreSQL | Redis | Spring Boot API | Python ML | React UI
 # ════════════════════════════════════════════════════════════════
 
 services:
@@ -29,6 +29,24 @@ services:
       retries: 5
       start_period: 20s
 
+  # ── Redis Cache (v2.0) ────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: scheduleiq-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - scheduleiq-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
   # ── Spring Boot Backend API ────────────────────────────────────
   backend:
     build:
@@ -39,10 +57,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/scheduleiq_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-scheduleiq_secure_2024}
+      SPRING_REDIS_URL: redis://redis:6379
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       APP_JWT_SECRET: ${JWT_SECRET:-dGhpc2lzYW11bHRpcGxlcmVnaW9uYWx3b3JrZm9yY2VvcHRpbWl6YXRpb25zZWN1cml0eWtleTI1NmJpdHM=}
       APP_JWT_EXPIRATION_MS: 86400000
@@ -96,6 +117,8 @@ services:
 # ── Volumes & Networks ─────────────────────────────────────────────
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local
 
 networks:

@@ -135,8 +135,8 @@ export function AlertCenter() {
   const totalActionItems = alerts.length + leaves.length;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#fafbfc]">
-      <div className="max-w-4xl mx-auto p-6 pb-10 space-y-6">
+    <div className="flex-1 overflow-y-auto bg-surface-variant">
+      <div className="w-full max-w-screen-2xl mx-auto p-6 pb-10 space-y-6">
 
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -177,13 +177,13 @@ export function AlertCenter() {
             <span className="text-xs font-bold text-error/80 bg-error/10 px-3 py-1.5 rounded-lg">Requires Attention</span>
           </div>
         ) : (
-          <div className="bg-gradient-to-r from-[#f0fdf4] to-[#f0fff4] border border-success/20 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
-            <div className="w-12 h-12 rounded-xl bg-success flex items-center justify-center shadow-md shrink-0">
+          <div className="bg-gradient-to-r from-[#f0fdf4] to-[#ecfdf5] border border-[#10b981]/20 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-[#10b981] flex items-center justify-center shadow-md shrink-0">
               <Shield className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-success">All Clear!</h3>
-              <p className="text-sm text-success/70 mt-0.5">No active alerts or pending requests right now.</p>
+              <h3 className="text-base font-bold" style={{ color: '#10b981' }}>All Clear!</h3>
+              <p className="text-sm mt-0.5" style={{ color: '#059669' }}>No active alerts or pending requests right now.</p>
             </div>
           </div>
         )}

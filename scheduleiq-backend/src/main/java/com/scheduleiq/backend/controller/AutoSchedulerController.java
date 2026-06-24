@@ -9,9 +9,11 @@ import com.scheduleiq.backend.repository.ShiftRepository;
 import com.scheduleiq.backend.service.optimization.AutoSchedulerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,8 @@ public class AutoSchedulerController {
     private final JobStatusRepository jobStatusRepository;
     private final ShiftRepository shiftRepository;
     private final com.scheduleiq.backend.repository.EmployeeRepository employeeRepository;
+    // v2.0: WebSocket broadcast for real-time schedule publishing notifications
+    private final SimpMessagingTemplate messagingTemplate;
 
     private Employee getEmployeeForUser(UserDetails userDetails) {
         return employeeRepository.findByEmail(userDetails.getUsername())
@@ -147,6 +151,11 @@ public class AutoSchedulerController {
         }
 
         log.info("Manager [{}] published {} shifts for week [{} - {}]", manager.getId(), publishedCount, weekStart, weekEnd);
+        // v2.0: Broadcast schedule publish event — all employee dashboards update in real-time
+        messagingTemplate.convertAndSend("/topic/schedule-updates",
+                Map.of("managerId", manager.getId(), "publishedCount", publishedCount,
+                       "weekStart", weekStart.toString(), "weekEnd", weekEnd.toString(),
+                       "message", "New schedule published! Check your upcoming shifts."));
         return ResponseEntity.ok(Map.of(
                 "publishedCount", publishedCount,
                 "totalShifts", shifts.size(),

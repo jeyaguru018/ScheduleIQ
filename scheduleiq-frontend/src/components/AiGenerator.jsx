@@ -338,7 +338,7 @@ export function AiGenerator() {
   });
 
   return (
-    <div className="flex h-full overflow-hidden bg-[#fafbfc]">
+    <div className="flex h-full overflow-hidden bg-surface-variant">
 
       {/* ── Left Parameters Panel ── */}
       <div className="w-80 bg-white border-r border-outline-variant flex flex-col shrink-0 shadow-sm">

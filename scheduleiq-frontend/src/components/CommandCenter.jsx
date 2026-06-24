@@ -201,7 +201,7 @@ export function CommandCenter() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#fafbfc]">
+      <div className="flex-1 flex items-center justify-center bg-surface-variant">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-[#1e1a8a]/20 border-t-[#1e1a8a] rounded-full animate-spin" />
           <p className="text-sm font-semibold text-on-surface-variant">Loading Command Center...</p>
@@ -211,8 +211,8 @@ export function CommandCenter() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#fafbfc]">
-      <div className="max-w-6xl mx-auto p-6 pb-10 space-y-5">
+    <div className="flex-1 overflow-y-auto bg-surface-variant">
+      <div className="w-full max-w-screen-2xl mx-auto p-6 pb-10 space-y-5">
 
         {/* Page Header */}
         <div className="flex items-center justify-between">

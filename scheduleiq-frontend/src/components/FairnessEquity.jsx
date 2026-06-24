@@ -58,8 +58,8 @@ export function FairnessEquity() {
   const criticalEmp = employeeIndex.find(e => e.isWarning);
 
   return (
-    <div className="flex-1 overflow-y-auto p-8 bg-[#fafbfc]">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="flex-1 overflow-y-auto p-8 bg-surface-variant">
+      <div className="w-full max-w-screen-2xl mx-auto space-y-6">
         
         <div className="flex items-center justify-between">
           <div>

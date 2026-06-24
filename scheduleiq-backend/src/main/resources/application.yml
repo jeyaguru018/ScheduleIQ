@@ -42,11 +42,24 @@ spring:
         order_inserts: true
         order_updates: true
 
-  # Cache configuration: Caffeine in-memory cache
+  # Cache configuration: Redis (production) with Caffeine fallback (local dev)
+  # When SPRING_REDIS_URL is set (Render production), Spring auto-detects Redis.
   cache:
-    type: caffeine
-    caffeine:
-      spec: maximumSize=500,expireAfterWrite=300s  # 5-minute TTL, max 500 entries
+    type: redis
+    redis:
+      time-to-live: 300000  # 5 minutes in milliseconds (default TTL)
+      cache-null-values: false
+
+  # Redis connection (v2.0 — production distributed caching)
+  redis:
+    url: ${SPRING_REDIS_URL:redis://localhost:6379}
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 4
+        min-idle: 1
+        max-wait: 1500ms
 
   # SMTP Mail settings using Gmail App Password
   # SECURITY: Set MAIL_USERNAME and MAIL_PASSWORD in your environment variables.
@@ -125,5 +138,5 @@ management:
 info:
   app:
     name: ScheduleIQ Backend
-    version: 1.0.0
-    description: Intelligent Workforce Planning API
+    version: 2.0.0
+    description: Intelligent Workforce Planning API — v2.0 with Redis, WebSockets, and PWA support

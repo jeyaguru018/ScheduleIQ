@@ -7,8 +7,10 @@ import com.scheduleiq.backend.repository.EmployeeRepository;
 import com.scheduleiq.backend.repository.LeaveRequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,6 +30,8 @@ public class LeaveController {
 
     private final LeaveRequestRepository leaveRequestRepository;
     private final EmployeeRepository employeeRepository;
+    // v2.0: WebSocket broadcasting for real-time leave status updates
+    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * GET /api/leave
@@ -97,6 +101,7 @@ public class LeaveController {
     @PatchMapping("/{id}/approve")
     @PreAuthorize("hasRole('MANAGER')")
     @Transactional
+    @CacheEvict(value = "leaveRequests", allEntries = true)
     public ResponseEntity<LeaveRequest> approveLeave(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -106,6 +111,10 @@ public class LeaveController {
                     LeaveRequest saved = leaveRequestRepository.save(leave);
                     log.info("Leave [{}] approved by manager for employee [{}]",
                             id, leave.getEmployee() != null ? leave.getEmployee().getId() : "unknown");
+                    // v2.0: Real-time broadcast to employees — no manual sync needed
+                    messagingTemplate.convertAndSend("/topic/leave-updates",
+                            Map.of("leaveId", id, "status", "APPROVED",
+                                   "employeeId", leave.getEmployee() != null ? leave.getEmployee().getId() : -1));
                     return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -118,6 +127,7 @@ public class LeaveController {
     @PatchMapping("/{id}/reject")
     @PreAuthorize("hasRole('MANAGER')")
     @Transactional
+    @CacheEvict(value = "leaveRequests", allEntries = true)
     public ResponseEntity<LeaveRequest> rejectLeave(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -126,6 +136,10 @@ public class LeaveController {
                     leave.setStatus("REJECTED");
                     LeaveRequest saved = leaveRequestRepository.save(leave);
                     log.info("Leave [{}] rejected by manager", id);
+                    // v2.0: Real-time broadcast
+                    messagingTemplate.convertAndSend("/topic/leave-updates",
+                            Map.of("leaveId", id, "status", "REJECTED",
+                                   "employeeId", leave.getEmployee() != null ? leave.getEmployee().getId() : -1));
                     return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
