@@ -10,10 +10,17 @@ import { Sun, Moon } from 'lucide-react';
  */
 export function DarkModeToggle({ className = '' }) {
   const [isDark, setIsDark] = useState(() => {
-    // Priority: saved preference > OS preference
-    const saved = localStorage.getItem('scheduleiq-theme');
-    if (saved) return saved === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    try {
+      const saved = localStorage.getItem('scheduleiq-theme');
+      if (saved) return saved === 'dark';
+    } catch (e) {
+      console.warn('Failed to access localStorage:', e);
+    }
+    try {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } catch (e) {
+      return false;
+    }
   });
 
   const [isAnimating, setIsAnimating] = useState(false);
@@ -26,7 +33,11 @@ export function DarkModeToggle({ className = '' }) {
     } else {
       html.classList.remove('dark');
     }
-    localStorage.setItem('scheduleiq-theme', isDark ? 'dark' : 'light');
+    try {
+      localStorage.setItem('scheduleiq-theme', isDark ? 'dark' : 'light');
+    } catch (e) {
+      console.warn('Failed to save theme in localStorage:', e);
+    }
   }, [isDark]);
 
   const toggle = useCallback(() => {

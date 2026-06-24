@@ -7,11 +7,15 @@ import './index.css'
 // Apply the saved theme preference BEFORE React renders to prevent FOUC
 // (Flash of Unstyled Content / wrong theme flash).
 (function applyTheme() {
-  const saved = localStorage.getItem('scheduleiq-theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const shouldBeDark = saved ? saved === 'dark' : prefersDark;
-  if (shouldBeDark) {
-    document.documentElement.classList.add('dark');
+  try {
+    const saved = localStorage.getItem('scheduleiq-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const shouldBeDark = saved ? saved === 'dark' : prefersDark;
+    if (shouldBeDark) {
+      document.documentElement.classList.add('dark');
+    }
+  } catch (e) {
+    console.warn('Failed to access localStorage for theme preference:', e);
   }
 })();
 

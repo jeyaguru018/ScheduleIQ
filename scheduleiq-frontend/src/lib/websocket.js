@@ -9,7 +9,12 @@ import { useEffect, useRef, useCallback } from 'react';
 // ────────────────────────────────────────────────────────────────────────────
 
 const WS_URL = (() => {
-  const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+  let base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+  if (base.startsWith('/')) {
+    base = window.location.origin + base;
+  } else if (!base.startsWith('http://') && !base.startsWith('https://')) {
+    base = window.location.origin + '/' + base;
+  }
   return base.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/websocket';
 })();
 
@@ -25,7 +30,13 @@ function createStompConnection(url, topic, onMessage) {
 
   const connect = () => {
     if (!active) return;
-    socket = new WebSocket(url);
+    try {
+      socket = new WebSocket(url);
+    } catch (err) {
+      console.warn(`[WebSocket] Failed to construct WebSocket for topic ${topic} with URL ${url}:`, err);
+      setTimeout(connect, 5000);
+      return;
+    }
 
     socket.onopen = () => {
       if (!active) { socket.close(); return; }

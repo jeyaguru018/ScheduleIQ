@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 
 /**
  * ErrorBoundary — Catches JavaScript errors in any child component tree.
@@ -38,7 +38,7 @@ export class ErrorBoundary extends React.Component {
             <p className="text-sm text-outline mb-6">
               This view encountered an unexpected error. Your data is safe — try refreshing or navigating away.
             </p>
-            {process.env.NODE_ENV === "development" && (
+            {import.meta.env.DEV && (
               <pre className="text-xs text-left bg-red-50 text-red-700 p-3 rounded-lg mb-6 overflow-auto max-h-40 border border-red-200">
                 {this.state.error?.message}
               </pre>

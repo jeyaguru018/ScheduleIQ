@@ -28,18 +28,32 @@ import { useToast } from './common/Toast';
 
 // Local storage helpers for persisting skills and availability per employee
 const getStoredSkills = (empId) => {
-  try { return JSON.parse(localStorage.getItem(`siq_skills_${empId}`) || '[]'); } catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(`siq_skills_${empId}`) || '[]');
+  } catch {
+    return [];
+  }
 };
 const saveStoredSkills = (empId, skills) => {
-  localStorage.setItem(`siq_skills_${empId}`, JSON.stringify(skills));
+  try {
+    localStorage.setItem(`siq_skills_${empId}`, JSON.stringify(skills));
+  } catch (e) {
+    console.warn('Failed to save skills to localStorage:', e);
+  }
 };
 const getStoredAvailability = (empId) => {
   try {
     return JSON.parse(localStorage.getItem(`siq_avail_${empId}`) || 'null');
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 };
 const saveStoredAvailability = (empId, avail) => {
-  localStorage.setItem(`siq_avail_${empId}`, JSON.stringify(avail));
+  try {
+    localStorage.setItem(`siq_avail_${empId}`, JSON.stringify(avail));
+  } catch (e) {
+    console.warn('Failed to save availability to localStorage:', e);
+  }
 };
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
