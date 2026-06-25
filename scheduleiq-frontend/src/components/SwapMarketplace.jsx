@@ -129,7 +129,7 @@ export function SwapMarketplace() {
 
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-surface-variant">
-      <div className="w-full max-w-screen-2xl mx-auto space-y-6">
+      <div className="w-full mx-auto space-y-6">
         
         <div className="flex items-center justify-between mb-8 shrink-0">
           <div>
@@ -219,7 +219,7 @@ export function SwapMarketplace() {
                       </div>
                       <div className="space-y-1">
                         <div className="text-[10px] font-bold text-outline uppercase tracking-wider">Taking shift:</div>
-                        <div className="text-xs font-semibold text-[#b45309] bg-[#fffbeb] border border-[#fcd34d] px-2 py-1 rounded inline-block truncate max-w-full">{swap.takingShift}</div>
+                        <div className="text-xs font-semibold text-on-warning bg-warning-container border border-warning px-2 py-1 rounded inline-block truncate max-w-full">{swap.takingShift}</div>
                       </div>
                     </div>
                   </div>
@@ -263,7 +263,7 @@ export function SwapMarketplace() {
 
       {/* Right Slide-out AI Backup Recommendations Panel */}
       {selectedSwapForBackup && (
-        <div className="w-[400px] bg-white border-l border-outline-variant flex flex-col shrink-0 animate-in slide-in-from-right duration-300 shadow-2xl z-20 absolute right-0 top-0 bottom-0">
+        <div className="w-[400px] bg-surface border-l border-outline-variant flex flex-col shrink-0 animate-in slide-in-from-right duration-300 shadow-2xl z-20 absolute right-0 top-0 bottom-0">
           <div className="p-6 border-b border-outline-variant flex items-start justify-between">
             <div>
               <h3 className="text-xl font-bold text-on-surface">AI Backup Recommendations</h3>
@@ -283,7 +283,7 @@ export function SwapMarketplace() {
               </div>
             ) : (
               backupRecommendations.map(emp => (
-                <div key={emp.id} className="p-4 border border-outline-variant rounded-xl flex items-center justify-between hover:shadow-md transition-shadow bg-white">
+                <div key={emp.id} className="p-4 border border-outline-variant rounded-xl flex items-center justify-between hover:shadow-md transition-shadow bg-surface">
                   <div className="flex items-center gap-3">
                     <Avatar name={emp.name} size="md" />
                     <div>

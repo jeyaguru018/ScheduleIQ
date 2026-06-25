@@ -136,7 +136,7 @@ export function AlertCenter() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-surface-variant">
-      <div className="w-full max-w-screen-2xl mx-auto p-6 pb-10 space-y-6">
+      <div className="w-full mx-auto p-6 pb-10 space-y-6">
 
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -151,7 +151,7 @@ export function AlertCenter() {
           <button
             onClick={() => loadData(true)}
             disabled={refreshing}
-            className="flex items-center gap-2 text-sm font-bold text-[#1e1a8a] bg-white border border-outline-variant px-4 py-2 rounded-xl hover:shadow-md transition-all"
+            className="flex items-center gap-2 text-sm font-bold text-[#1e1a8a] bg-surface border border-outline-variant px-4 py-2 rounded-xl hover:shadow-md transition-all"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Refreshing...' : 'Refresh'}
@@ -177,13 +177,13 @@ export function AlertCenter() {
             <span className="text-xs font-bold text-error/80 bg-error/10 px-3 py-1.5 rounded-lg">Requires Attention</span>
           </div>
         ) : (
-          <div className="bg-gradient-to-r from-[#f0fdf4] to-[#ecfdf5] border border-[#10b981]/20 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
-            <div className="w-12 h-12 rounded-xl bg-[#10b981] flex items-center justify-center shadow-md shrink-0">
-              <Shield className="w-6 h-6 text-white" />
+          <div className="bg-success-container/30 border border-success/20 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-success flex items-center justify-center shadow-md shrink-0">
+              <Shield className="w-6 h-6 text-on-success" />
             </div>
             <div>
-              <h3 className="text-base font-bold" style={{ color: '#10b981' }}>All Clear!</h3>
-              <p className="text-sm mt-0.5" style={{ color: '#059669' }}>No active alerts or pending requests right now.</p>
+              <h3 className="text-base font-bold text-success">All Clear!</h3>
+              <p className="text-sm mt-0.5 text-success/80">No active alerts or pending requests right now.</p>
             </div>
           </div>
         )}
@@ -224,7 +224,7 @@ export function AlertCenter() {
                           </div>
                         </div>
                         <span className={`border text-[10px] font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 ${
-                          isHighRisk ? 'bg-[#fef2f2] text-error border-error/20' : 'bg-[#fffbeb] text-[#b45309] border-[#fcd34d]'
+                          isHighRisk ? 'bg-[#fef2f2] text-error border-error/20' : 'bg-warning-container text-on-warning border-warning'
                         }`}>
                           <AlertCircle className="w-3.5 h-3.5" />
                           {isHighRisk ? 'Critical' : 'Moderate'}
@@ -235,7 +235,7 @@ export function AlertCenter() {
                       <div>
                         <div className="flex justify-between items-center mb-1.5">
                           <span className="text-[10px] font-bold text-outline uppercase tracking-wider">AI No-Show Risk</span>
-                          <span className={`text-sm font-extrabold ${isHighRisk ? 'text-error' : 'text-[#b45309]'}`}>{riskPct}%</span>
+                          <span className={`text-sm font-extrabold ${isHighRisk ? 'text-error' : 'text-on-warning'}`}>{riskPct}%</span>
                         </div>
                         <div className="w-full h-2 bg-surface-variant rounded-full overflow-hidden">
                           <div
@@ -252,7 +252,7 @@ export function AlertCenter() {
                             Reliability: {alertItem.employee ? Math.round(alertItem.employee.reliabilityScore * 100) : 0}%
                           </span>
                           {alertItem.noShowRisk > 0.5 && (
-                            <span className="text-[10px] font-bold text-[#b45309] bg-[#fffbeb] px-2 py-1 rounded-lg border border-[#fcd34d]">Night Shift Fatigue</span>
+                            <span className="text-[10px] font-bold text-on-warning bg-warning-container px-2 py-1 rounded-lg border border-warning">Night Shift Fatigue</span>
                           )}
                         </div>
                       </div>
@@ -288,12 +288,12 @@ export function AlertCenter() {
             <CalendarRange className="w-4 h-4 text-[#1e1a8a]" />
             Pending Leave Requests
             {leaves.length > 0 && (
-              <span className="text-xs font-bold text-[#b45309] bg-[#fffbeb] px-2 py-0.5 rounded-full border border-[#fcd34d]">{leaves.length} pending</span>
+              <span className="text-xs font-bold text-on-warning bg-warning-container px-2 py-0.5 rounded-full border border-warning">{leaves.length} pending</span>
             )}
           </h3>
 
           {leaves.length === 0 ? (
-            <div className="p-8 text-center bg-white border border-dashed border-outline-variant rounded-2xl shadow-sm">
+            <div className="p-8 text-center bg-surface border border-dashed border-outline-variant rounded-2xl shadow-sm">
               <CalendarRange className="w-10 h-10 text-outline-variant mx-auto mb-3" />
               <h4 className="text-sm font-bold text-on-surface">No pending leave requests</h4>
               <p className="text-xs text-on-surface-variant mt-1">All leave requests have been processed. You're caught up!</p>
@@ -313,7 +313,7 @@ export function AlertCenter() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-bold text-sm text-on-surface">{empName}</h4>
-                          <span className="text-[9px] font-bold text-[#b45309] bg-[#fffbeb] px-2 py-0.5 rounded-full border border-[#fcd34d] uppercase tracking-wider flex items-center gap-1">
+                          <span className="text-[9px] font-bold text-on-warning bg-warning-container px-2 py-0.5 rounded-full border border-warning uppercase tracking-wider flex items-center gap-1">
                             <Clock className="w-2.5 h-2.5" />Pending Review
                           </span>
                         </div>

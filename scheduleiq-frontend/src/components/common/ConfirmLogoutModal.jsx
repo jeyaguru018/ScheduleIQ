@@ -22,7 +22,7 @@ export function ConfirmLogoutModal({ isOpen, onConfirm, onCancel }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="logout-dialog-title"
-        className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-sm bg-surface rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-200"
         style={{
           boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9)'
         }}

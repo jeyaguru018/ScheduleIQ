@@ -208,12 +208,12 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
 
   return (
     <div className="flex-1 bg-gradient-to-br from-[#f0f4ff] to-[#fafbfc] flex justify-center items-center h-full overflow-hidden">
-      <div className="w-full max-w-[420px] h-full bg-white shadow-2xl relative flex flex-col overflow-hidden sm:rounded-3xl sm:h-[900px] border border-outline-variant/30">
+      <div className="w-full max-w-[420px] h-full bg-surface shadow-2xl relative flex flex-col overflow-hidden sm:rounded-3xl sm:h-[900px] border border-outline-variant/30">
 
         {/* Gradient Header */}
         <div className="relative overflow-hidden bg-gradient-to-br from-[#1e1a8a] to-[#312e9e] px-6 pt-10 pb-8 shrink-0">
-          <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/5 rounded-full blur-2xl" />
-          <div className="absolute -left-4 bottom-0 w-28 h-28 bg-white/5 rounded-full blur-xl" />
+          <div className="absolute -right-8 -top-8 w-40 h-40 bg-surface/5 rounded-full blur-2xl" />
+          <div className="absolute -left-4 bottom-0 w-28 h-28 bg-surface/5 rounded-full blur-xl" />
           
           <div className="relative flex justify-between items-start mb-6">
             <div>
@@ -227,7 +227,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
             </div>
             <div className="flex items-center gap-2">
               <button
-                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20 transition-all border border-white/10"
+                className="w-9 h-9 rounded-full bg-surface/10 flex items-center justify-center text-white/80 hover:bg-surface/20 transition-all border border-white/10"
                 onClick={() => setIsLeaveModalOpen(true)}
                 title="Request Leave"
               >
@@ -241,11 +241,11 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
 
           {/* Quick Stats Row */}
           <div className="flex gap-3 relative">
-            <div className="flex-1 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+            <div className="flex-1 bg-surface/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
               <div className="text-2xl font-bold text-white">{shifts.length}</div>
               <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wider mt-0.5">Upcoming Shifts</div>
             </div>
-            <div className="flex-1 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+            <div className="flex-1 bg-surface/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
               <div className="text-2xl font-bold text-white">
                 {shifts.reduce((acc, s) => {
                   const h = (new Date(s.endTime) - new Date(s.startTime)) / (1000 * 60 * 60);
@@ -254,7 +254,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
               </div>
               <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wider mt-0.5">Hours Scheduled</div>
             </div>
-            <div className="flex-1 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+            <div className="flex-1 bg-surface/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
               <div className="text-2xl font-bold text-white">{myLeaves.filter(l => l.status === 'PENDING').length}</div>
               <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wider mt-0.5">Pending Leave</div>
             </div>
@@ -267,7 +267,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
 
             {/* Next Shift Hero Card */}
             {loading ? (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-outline-variant/30 text-center">
+              <div className="bg-surface rounded-2xl p-6 shadow-sm border border-outline-variant/30 text-center">
                 <div className="w-8 h-8 border-4 border-[#1e1a8a]/30 border-t-[#1e1a8a] rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-sm font-semibold text-on-surface-variant">Loading your schedule...</p>
               </div>
@@ -275,12 +275,12 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
               <div className="relative overflow-hidden rounded-2xl shadow-lg">
                 {/* Background gradient */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#14b8a6] to-[#0d9488]" />
-                <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl" />
-                <div className="absolute -left-2 -top-2 w-20 h-20 bg-white/5 rounded-full" />
+                <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-surface/10 rounded-full blur-xl" />
+                <div className="absolute -left-2 -top-2 w-20 h-20 bg-surface/5 rounded-full" />
 
                 <div className="relative p-6 text-white">
                   <div className="flex justify-between items-start mb-4">
-                    <span className="bg-white/20 border border-white/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm">
+                    <span className="bg-surface/20 border border-white/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm">
                       {nextShift.clockStatus === 'CLOCKED_IN' ? '🟢 Active Shift' : '⏰ Next Shift'}
                     </span>
                     <span className="text-white/70 text-xs font-semibold">
@@ -307,7 +307,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
 
                   {nextShift.clockStatus !== 'CLOCKED_IN' ? (
                     <Button
-                      className="w-full bg-white text-[#0d9488] hover:bg-white/90 font-bold py-3 shadow-md"
+                      className="w-full bg-surface text-[#0d9488] hover:bg-surface/90 font-bold py-3 shadow-md"
                       onClick={() => handleClockIn(nextShift.id)}
                     >
                       <Clock className="w-4 h-4 mr-2" />Clock In
@@ -323,7 +323,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl p-6 text-center border border-outline-variant/30 shadow-sm">
+              <div className="bg-surface rounded-2xl p-6 text-center border border-outline-variant/30 shadow-sm">
                 <CalendarDays className="w-10 h-10 text-outline-variant mx-auto mb-2" />
                 <p className="font-bold text-on-surface text-sm">No upcoming shifts found</p>
                 <p className="text-xs text-on-surface-variant mt-1">Your manager hasn't published a schedule yet. Tap Sync to refresh.</p>
@@ -348,7 +348,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                     return (
                       <div
                         key={s.id}
-                        className={`flex items-center justify-between p-4 rounded-xl border shadow-sm bg-white transition-all ${
+                        className={`flex items-center justify-between p-4 rounded-xl border shadow-sm bg-surface transition-all ${
                           isClockedOut ? 'opacity-50 border-outline-variant/30' :
                           s.status === 'WAITING_SWAP' ? 'border-l-4 border-l-[#f59e0b] border-outline-variant/50' :
                           'border-outline-variant/40 hover:shadow-md hover:-translate-y-0.5'
@@ -378,7 +378,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                           {isClockedOut ? (
                             <span className="text-[9px] font-bold text-outline bg-surface-variant px-2 py-1 rounded uppercase tracking-wider">Done</span>
                           ) : s.status === 'WAITING_SWAP' ? (
-                            <span className="text-[9px] font-bold text-[#b45309] bg-[#fffbeb] px-2 py-1 rounded border border-[#fcd34d] uppercase">Swap Pending</span>
+                            <span className="text-[9px] font-bold text-on-warning bg-warning-container px-2 py-1 rounded border border-warning uppercase">Swap Pending</span>
                           ) : (
                             <button
                               className="text-xs font-bold text-[#1e1a8a] border border-[#1e1a8a]/20 px-2.5 py-1.5 rounded-lg hover:bg-[#1e1a8a]/5 transition-colors"
@@ -409,7 +409,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                 </button>
               </div>
               {myLeaves.length === 0 ? (
-                <div className="text-center py-5 text-sm text-outline-variant font-semibold bg-white rounded-xl border border-outline-variant/30 shadow-sm">
+                <div className="text-center py-5 text-sm text-outline-variant font-semibold bg-surface rounded-xl border border-outline-variant/30 shadow-sm">
                   <CalendarRange className="w-8 h-8 text-outline-variant mx-auto mb-1.5" />
                   No leave requests yet.
                 </div>
@@ -417,7 +417,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                 <div className="space-y-2">
                   {myLeaves.slice(0, 5).map(leave => {
                     const statusConfig = {
-                      PENDING:  { color: 'bg-[#fffbeb] text-[#b45309] border-[#fcd34d]', icon: <Clock className="w-3.5 h-3.5" /> },
+                      PENDING:  { color: 'bg-warning-container text-on-warning border-warning', icon: <Clock className="w-3.5 h-3.5" /> },
                       APPROVED: { color: 'bg-[#f0fdf4] text-[#15803d] border-[#86efac]', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
                       REJECTED: { color: 'bg-[#fef2f2] text-[#b91c1c] border-[#fca5a5]', icon: <XCircle className="w-3.5 h-3.5" /> }
                     };
@@ -425,7 +425,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                     return (
                       <div
                         key={leave.id}
-                        className={`flex items-center justify-between p-3.5 rounded-xl border bg-white shadow-sm ${
+                        className={`flex items-center justify-between p-3.5 rounded-xl border bg-surface shadow-sm ${
                           leave.status === 'APPROVED' ? 'border-[#86efac]/50' :
                           leave.status === 'REJECTED' ? 'border-[#fca5a5]/50' : 'border-outline-variant/30'
                         }`}
@@ -451,7 +451,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
         </div>
 
         {/* Bottom Navigation */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-outline-variant/30 flex justify-around items-center px-4 py-3 pb-safe z-20">
+        <div className="absolute bottom-0 left-0 right-0 bg-surface/90 backdrop-blur-md border-t border-outline-variant/30 flex justify-around items-center px-4 py-3 pb-safe z-20">
           <button className="flex flex-col items-center gap-1 group">
             <div className="w-10 h-7 rounded-full bg-[#1e1a8a]/10 flex items-center justify-center group-hover:bg-[#1e1a8a]/20 transition-colors">
               <Home className="w-4 h-4 text-[#1e1a8a]" />

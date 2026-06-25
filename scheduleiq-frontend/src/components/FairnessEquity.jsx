@@ -59,7 +59,7 @@ export function FairnessEquity() {
 
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-surface-variant">
-      <div className="w-full max-w-screen-2xl mx-auto space-y-6">
+      <div className="w-full mx-auto space-y-6">
         
         <div className="flex items-center justify-between">
           <div>
@@ -68,7 +68,7 @@ export function FairnessEquity() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-outline mr-2">This Week (Oct 15 - 21)</span>
-            <Button variant="outline" className="bg-white font-bold shadow-sm">
+            <Button variant="outline" className="bg-surface font-bold shadow-sm">
               <Download className="w-4 h-4 mr-2" />
               Export
             </Button>

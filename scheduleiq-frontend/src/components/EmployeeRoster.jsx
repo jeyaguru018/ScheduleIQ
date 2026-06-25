@@ -241,7 +241,7 @@ export function EmployeeRoster() {
                   <input
                     type="text"
                     placeholder="Search employees..."
-                    className="pl-9 h-9 w-full rounded-xl border border-outline-variant bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1e1a8a]/30 shadow-sm"
+                    className="pl-9 h-9 w-full rounded-xl border border-outline-variant bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-[#1e1a8a]/30 shadow-sm"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                   />
@@ -316,9 +316,9 @@ export function EmployeeRoster() {
 
       {/* ── Right Slide-out Profile Panel ─────────────────────────────────── */}
       {selectedEmp && (
-        <div className="w-[400px] bg-white border-l border-outline-variant flex flex-col shrink-0 animate-in slide-in-from-right duration-300 shadow-2xl z-20 absolute right-0 top-0 bottom-0 overflow-y-auto">
+        <div className="w-[400px] bg-surface border-l border-outline-variant flex flex-col shrink-0 animate-in slide-in-from-right duration-300 shadow-2xl z-20 absolute right-0 top-0 bottom-0 overflow-y-auto">
           {/* Header */}
-          <div className="p-6 border-b border-outline-variant flex items-start justify-between sticky top-0 bg-white z-10">
+          <div className="p-6 border-b border-outline-variant flex items-start justify-between sticky top-0 bg-surface z-10">
             <div className="flex items-center gap-4">
               <Avatar name={selectedEmp.name} size="xl" className="border-2 border-surface shadow-3d-card" />
               <div>
@@ -338,13 +338,13 @@ export function EmployeeRoster() {
           <div className="p-5 flex gap-3 border-b border-outline-variant">
             <button
               onClick={() => { setIsMessageOpen(v => !v); setIsAvailabilityOpen(false); setIsSkillsOpen(false); setIsProfileOpen(false); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border transition-all active-press shadow-3d-btn ${isMessageOpen ? 'bg-[#1e1a8a] text-white border-[#1e1a8a]' : 'bg-white text-on-surface border-outline-variant hover:border-[#1e1a8a]/30 hover:bg-[#1e1a8a]/5'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border transition-all active-press shadow-3d-btn ${isMessageOpen ? 'bg-[#1e1a8a] text-white border-[#1e1a8a]' : 'bg-surface text-on-surface border-outline-variant hover:border-[#1e1a8a]/30 hover:bg-[#1e1a8a]/5'}`}
             >
               <MessageCircle className="w-4 h-4" /> Message
             </button>
             <button
               onClick={() => { openEdit(selectedEmp); }}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border bg-white text-on-surface border-outline-variant hover:border-[#1e1a8a]/30 hover:bg-[#1e1a8a]/5 transition-all active-press shadow-3d-btn"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border bg-surface text-on-surface border-outline-variant hover:border-[#1e1a8a]/30 hover:bg-[#1e1a8a]/5 transition-all active-press shadow-3d-btn"
             >
               <Settings2 className="w-4 h-4" /> Adjust
             </button>
@@ -353,7 +353,7 @@ export function EmployeeRoster() {
           {/* Message Panel */}
           {isMessageOpen && (
             <div className="mx-5 mt-4 mb-2 rounded-xl border border-outline-variant bg-surface-variant/20 overflow-hidden">
-              <div className="px-4 py-3 border-b border-outline-variant flex items-center gap-2 bg-white">
+              <div className="px-4 py-3 border-b border-outline-variant flex items-center gap-2 bg-surface">
                 <MessageCircle className="w-4 h-4 text-[#1e1a8a]" />
                 <span className="text-sm font-bold text-on-surface">Message {selectedEmp.name.split(' ')[0]}</span>
               </div>
@@ -370,7 +370,7 @@ export function EmployeeRoster() {
                   </div>
                 ))}
               </div>
-              <div className="flex gap-2 p-3 bg-white border-t border-outline-variant">
+              <div className="flex gap-2 p-3 bg-surface border-t border-outline-variant">
                 <input
                   type="text"
                   value={messageText}
@@ -392,7 +392,7 @@ export function EmployeeRoster() {
           {/* Details Sections */}
           <div className="flex-1 p-5 space-y-5">
             {/* Weekly Availability */}
-            <div className="rounded-xl border border-outline-variant bg-white overflow-hidden shadow-3d-card">
+            <div className="rounded-xl border border-outline-variant bg-surface overflow-hidden shadow-3d-card">
               <button
                 onClick={() => { setIsAvailabilityOpen(v => !v); setIsMessageOpen(false); setIsSkillsOpen(false); setIsProfileOpen(false); }}
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-variant/30 transition-colors"
@@ -416,7 +416,7 @@ export function EmployeeRoster() {
                         <select
                           value={availability[i]}
                           onChange={e => { const a = [...availability]; a[i] = e.target.value; setAvailability(a); }}
-                          className="flex-1 text-xs border border-outline-variant rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#1e1a8a]/30"
+                          className="flex-1 text-xs border border-outline-variant rounded-lg px-2 py-1.5 bg-surface focus:outline-none focus:ring-2 focus:ring-[#1e1a8a]/30"
                         >
                           {SLOTS.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
@@ -434,7 +434,7 @@ export function EmployeeRoster() {
             </div>
 
             {/* Skills & Tags */}
-            <div className="rounded-xl border border-outline-variant bg-white overflow-hidden shadow-3d-card">
+            <div className="rounded-xl border border-outline-variant bg-surface overflow-hidden shadow-3d-card">
               <button
                 onClick={() => { setIsSkillsOpen(v => !v); setIsMessageOpen(false); setIsAvailabilityOpen(false); setIsProfileOpen(false); }}
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-variant/30 transition-colors"
@@ -470,7 +470,7 @@ export function EmployeeRoster() {
                       onChange={e => setNewSkill(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') handleAddSkill(); }}
                       placeholder="e.g. Forklift, Cash Handling..."
-                      className="flex-1 text-xs border border-outline-variant rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30"
+                      className="flex-1 text-xs border border-outline-variant rounded-lg px-3 py-2 bg-surface focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30"
                     />
                     <button
                       onClick={handleAddSkill}
@@ -484,7 +484,7 @@ export function EmployeeRoster() {
             </div>
 
             {/* Fairness Breakdown */}
-            <div className="rounded-xl border border-outline-variant bg-white overflow-hidden shadow-3d-card">
+            <div className="rounded-xl border border-outline-variant bg-surface overflow-hidden shadow-3d-card">
               <button
                 onClick={() => { setIsProfileOpen(v => !v); setIsMessageOpen(false); setIsAvailabilityOpen(false); setIsSkillsOpen(false); }}
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-variant/30 transition-colors"
@@ -507,7 +507,7 @@ export function EmployeeRoster() {
                       { label: 'Hourly Rate', value: `₹${selectedEmp.baseHourlyRate}/h`, icon: BarChart2, color: 'text-[#0d9488]', bg: 'bg-teal-50' },
                     ].map(m => (
                       <div key={m.label} className={`flex items-center gap-3 p-3 rounded-xl ${m.bg} border border-white shadow-sm`}>
-                        <div className={`w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm`}>
+                        <div className={`w-8 h-8 rounded-lg bg-surface flex items-center justify-center shadow-sm`}>
                           <m.icon className={`w-4 h-4 ${m.color}`} />
                         </div>
                         <div>
@@ -545,7 +545,7 @@ export function EmployeeRoster() {
                       {skills.length === 0
                         ? <span className="text-xs text-outline">No skills tagged yet</span>
                         : skills.map(s => (
-                          <span key={s} className="text-[10px] font-bold bg-white text-on-surface px-2 py-0.5 rounded-full border border-outline-variant">{s}</span>
+                          <span key={s} className="text-[10px] font-bold bg-surface text-on-surface px-2 py-0.5 rounded-full border border-outline-variant">{s}</span>
                         ))
                       }
                     </div>

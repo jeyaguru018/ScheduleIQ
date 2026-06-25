@@ -30,7 +30,7 @@ export class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center bg-surface-variant/30 p-8">
-          <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-outline-variant p-8 text-center">
+          <div className="max-w-md w-full bg-surface rounded-2xl shadow-lg border border-outline-variant p-8 text-center">
             <div className="w-16 h-16 mx-auto mb-4 bg-red-50 rounded-full flex items-center justify-center">
               <span className="text-3xl">⚠️</span>
             </div>

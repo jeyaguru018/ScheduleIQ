@@ -166,7 +166,7 @@ export function DemandForecast() {
 
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-surface-variant">
-      <div className="w-full max-w-screen-2xl mx-auto space-y-6">
+      <div className="w-full mx-auto space-y-6">
         
         <div className="flex items-center justify-between">
           <div>
@@ -180,7 +180,7 @@ export function DemandForecast() {
                 type="date"
                 value={selectedDate}
                 onChange={e => setSelectedDate(e.target.value)}
-                className="bg-white border border-outline-variant rounded-lg p-2.5 pl-9 font-semibold text-sm outline-none shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 cursor-pointer text-on-surface"
+                className="bg-surface border border-outline-variant rounded-lg p-2.5 pl-9 font-semibold text-sm outline-none shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 cursor-pointer text-on-surface"
               />
               <CalendarDays className="w-4 h-4 text-[#1e1a8a] absolute left-3 pointer-events-none" />
             </div>

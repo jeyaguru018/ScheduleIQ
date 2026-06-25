@@ -197,7 +197,7 @@ export function ControlRoom() {
 
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-surface-variant">
-      <div className="w-full max-w-screen-2xl mx-auto space-y-6 flex flex-col h-[calc(100vh-140px)] min-h-0 flex-1">
+      <div className="w-full mx-auto space-y-6 flex flex-col h-[calc(100vh-140px)] min-h-0 flex-1">
         
         <div className="flex items-center justify-between shrink-0">
           <div>
@@ -207,7 +207,7 @@ export function ControlRoom() {
             </h2>
             <p className="text-on-surface-variant mt-1">Real-time floor allocations and interactive natural language assistant.</p>
           </div>
-          <Button variant="outline" className="bg-white" onClick={loadData}>
+          <Button variant="outline" className="bg-surface" onClick={loadData}>
             <RefreshCw className="w-4 h-4 mr-2" /> Reload Feed
           </Button>
         </div>
@@ -216,7 +216,7 @@ export function ControlRoom() {
         <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0 overflow-hidden">
           
           {/* Left Side: Store Floorplan & Duty Status */}
-          <div className="flex-1 bg-white border border-outline-variant rounded-2xl p-6 flex flex-col overflow-hidden shadow-sm">
+          <div className="flex-1 bg-surface border border-outline-variant rounded-2xl p-6 flex flex-col overflow-hidden shadow-sm">
             <h3 className="text-lg font-bold text-[#1e1a8a] mb-4 flex items-center gap-2">
               <MapPin className="w-5 h-5" /> Live Store Map (Chennai Store #1)
             </h3>
@@ -224,7 +224,7 @@ export function ControlRoom() {
             <div className="flex-1 relative border border-dashed border-outline-variant rounded-xl p-4 bg-[#fafbfc] grid grid-cols-2 grid-rows-2 gap-4">
               
               {/* Zone A: Checkout Desks (Cashiers) */}
-              <div className="border border-outline-variant rounded-xl p-4 bg-white shadow-sm flex flex-col">
+              <div className="border border-outline-variant rounded-xl p-4 bg-surface shadow-sm flex flex-col">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-xs font-extrabold text-[#10b981] bg-[#10b981]/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">Checkout Zone</span>
                   <span className="text-[10px] font-bold text-outline uppercase">{cashiersOnDuty.length} Active</span>
@@ -250,7 +250,7 @@ export function ControlRoom() {
               </div>
 
               {/* Zone B: Inventory & Stockroom (Stockers) */}
-              <div className="border border-outline-variant rounded-xl p-4 bg-white shadow-sm flex flex-col">
+              <div className="border border-outline-variant rounded-xl p-4 bg-surface shadow-sm flex flex-col">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-xs font-extrabold text-[#8b5cf6] bg-[#8b5cf6]/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">Stockroom</span>
                   <span className="text-[10px] font-bold text-outline uppercase">{stockersOnDuty.length} Active</span>
@@ -275,7 +275,7 @@ export function ControlRoom() {
               </div>
 
               {/* Zone C: Delivery Dispatch (Delivery Boys) */}
-              <div className="border border-outline-variant rounded-xl p-4 bg-white shadow-sm flex flex-col">
+              <div className="border border-outline-variant rounded-xl p-4 bg-surface shadow-sm flex flex-col">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-xs font-extrabold text-[#f59e0b] bg-[#f59e0b]/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">Delivery Hub</span>
                   <span className="text-[10px] font-bold text-outline uppercase">{deliveryOnDuty.length} Active</span>
@@ -300,7 +300,7 @@ export function ControlRoom() {
               </div>
 
               {/* Zone D: Off-Duty / Backup Pool */}
-              <div className="border border-outline-variant rounded-xl p-4 bg-white shadow-sm flex flex-col">
+              <div className="border border-outline-variant rounded-xl p-4 bg-surface shadow-sm flex flex-col">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-xs font-extrabold text-outline bg-surface-variant px-2.5 py-0.5 rounded-full uppercase tracking-wider">Off-Duty Pool</span>
                   <span className="text-[10px] font-bold text-outline uppercase">Available</span>
@@ -323,7 +323,7 @@ export function ControlRoom() {
           </div>
 
           {/* Right Side: Natural Language Command Assistant */}
-          <div className="w-full lg:w-96 bg-white border border-outline-variant rounded-2xl flex flex-col overflow-hidden shadow-sm">
+          <div className="w-full lg:w-96 bg-surface border border-outline-variant rounded-2xl flex flex-col overflow-hidden shadow-sm">
             <div className="p-4 border-b border-outline-variant bg-surface flex items-center justify-between shrink-0">
               <h3 className="font-bold text-on-surface flex items-center gap-2 text-sm uppercase tracking-wider">
                 <Sparkles className="w-4 h-4 text-[#1e1a8a]" /> Command Assistant
@@ -365,7 +365,7 @@ export function ControlRoom() {
                 onChange={e => setCommandText(e.target.value)} 
                 placeholder="Type commands here..." 
                 disabled={isProcessing}
-                className="flex-1 h-10 text-xs shadow-sm bg-white"
+                className="flex-1 h-10 text-xs shadow-sm bg-surface"
               />
               <Button type="submit" variant="primary" className="bg-[#1e1a8a] h-10 w-10 p-0 flex items-center justify-center shrink-0 shadow" disabled={isProcessing}>
                 <Send className="w-4 h-4 text-white" />

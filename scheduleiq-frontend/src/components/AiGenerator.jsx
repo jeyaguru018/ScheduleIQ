@@ -321,7 +321,7 @@ export function AiGenerator() {
         className={`w-11 h-6 rounded-full relative transition-all duration-200 shrink-0 ${checked ? 'bg-[#1e1a8a]' : 'bg-outline-variant'}`}
         type="button"
       >
-        <div className={`w-4 h-4 bg-white rounded-full absolute top-1 shadow-sm transition-all duration-200 ${checked ? 'left-6' : 'left-1'}`} />
+        <div className={`w-4 h-4 bg-surface rounded-full absolute top-1 shadow-sm transition-all duration-200 ${checked ? 'left-6' : 'left-1'}`} />
       </button>
     </div>
   );
@@ -341,7 +341,7 @@ export function AiGenerator() {
     <div className="flex h-full overflow-hidden bg-surface-variant">
 
       {/* ── Left Parameters Panel ── */}
-      <div className="w-80 bg-white border-r border-outline-variant flex flex-col shrink-0 shadow-sm">
+      <div className="w-80 bg-surface border-r border-outline-variant flex flex-col shrink-0 shadow-sm">
         <div className="p-6 border-b border-outline-variant bg-gradient-to-br from-[#1e1a8a] to-[#312e9e]">
           <h2 className="text-lg font-bold flex items-center gap-2 text-white">
             <Settings2 className="w-5 h-5" />Parameters
@@ -370,7 +370,7 @@ export function AiGenerator() {
                 type="date"
                 value={targetWeekStart}
                 onChange={e => setTargetWeekStart(e.target.value)}
-                className="w-full bg-white border border-outline-variant rounded-xl p-2.5 pl-10 font-semibold text-sm outline-none shadow-sm focus:border-[#1e1a8a] focus:ring-2 focus:ring-[#1e1a8a]/20 cursor-pointer text-on-surface"
+                className="w-full bg-surface border border-outline-variant rounded-xl p-2.5 pl-10 font-semibold text-sm outline-none shadow-sm focus:border-[#1e1a8a] focus:ring-2 focus:ring-[#1e1a8a]/20 cursor-pointer text-on-surface"
               />
               <CalendarIcon className="w-4 h-4 text-[#1e1a8a] absolute left-3 pointer-events-none" />
             </div>
@@ -384,7 +384,7 @@ export function AiGenerator() {
             <label className="text-[10px] font-bold text-outline uppercase tracking-wider mb-2 block">Locations / Sites</label>
             <div
               onClick={() => setShowLocationDropdown(!showLocationDropdown)}
-              className="flex items-center justify-between px-3 py-2.5 border border-outline-variant rounded-xl bg-white shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-between px-3 py-2.5 border border-outline-variant rounded-xl bg-surface shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-2 overflow-hidden">
                 <MapPin className="w-4 h-4 text-[#1e1a8a] shrink-0" />
@@ -393,7 +393,7 @@ export function AiGenerator() {
               <span className="text-xs font-bold text-outline shrink-0">▼</span>
             </div>
             {showLocationDropdown && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-outline-variant rounded-xl shadow-xl z-30 p-2 space-y-1 mt-1">
+              <div className="absolute top-full left-0 right-0 bg-surface border border-outline-variant rounded-xl shadow-xl z-30 p-2 space-y-1 mt-1">
                 {locations.map(loc => (
                   <label key={loc} className="flex items-center gap-2 p-2 hover:bg-surface-variant/40 rounded-lg cursor-pointer text-sm font-semibold">
                     <input
@@ -418,7 +418,7 @@ export function AiGenerator() {
           </div>
 
           {/* Constraint Toggles */}
-          <div className="border border-outline-variant rounded-xl p-4 space-y-1 bg-white shadow-sm">
+          <div className="border border-outline-variant rounded-xl p-4 space-y-1 bg-surface shadow-sm">
             <p className="text-[10px] font-bold text-outline uppercase tracking-wider mb-3">Constraint Rules</p>
             <Toggle label="Enforce 8hr rest period" checked={toggles.rest} onChange={v => setToggles({ ...toggles, rest: v })} description="Prevent back-to-back overnight shifts" />
             <div className="border-t border-outline-variant/40" />
@@ -447,7 +447,7 @@ export function AiGenerator() {
         </div>
 
         {/* Generate Button */}
-        <div className="p-5 border-t border-outline-variant bg-white">
+        <div className="p-5 border-t border-outline-variant bg-surface">
           <Button
             className="w-full bg-gradient-to-r from-[#1e1a8a] to-[#312e9e] hover:from-[#1e1a8a]/90 hover:to-[#312e9e]/90 text-white font-bold py-3 shadow-lg rounded-xl"
             onClick={handleGenerate}
@@ -487,10 +487,10 @@ export function AiGenerator() {
               Configure your parameters on the left and click "Generate Schedule with AI" to create an optimized roster.
             </p>
             {employees.length === 0 && (
-              <div className="mt-6 bg-[#fffbeb] border border-[#fcd34d] rounded-xl p-4 flex items-start gap-3 max-w-sm">
-                <AlertTriangle className="w-5 h-5 text-[#b45309] shrink-0 mt-0.5" />
+              <div className="mt-6 bg-warning-container border border-warning rounded-xl p-4 flex items-start gap-3 max-w-sm">
+                <AlertTriangle className="w-5 h-5 text-on-warning shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-bold text-[#b45309]">No employees in team</p>
+                  <p className="text-sm font-bold text-on-warning">No employees in team</p>
                   <p className="text-xs text-[#92400e] mt-0.5">Add employees to the Roster before generating a schedule.</p>
                 </div>
               </div>
@@ -531,7 +531,7 @@ export function AiGenerator() {
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  className="bg-white font-bold border-outline-variant shadow-sm"
+                  className="bg-surface font-bold border-outline-variant shadow-sm"
                   onClick={() => setIsEditing(!isEditing)}
                 >
                   <Edit3 className="w-4 h-4 mr-2" />
@@ -556,7 +556,7 @@ export function AiGenerator() {
                 { icon: <DollarSign className="w-4 h-4 text-[#8b5cf6]" />, label: 'Est. Cost', value: `₹${generationMetrics.cost.toLocaleString()}` },
                 { icon: <TrendingUp className="w-4 h-4 text-[#14b8a6]" />, label: 'Assigned', value: `${generationMetrics.assigned}/${generationMetrics.total}` }
               ].map((m, i) => (
-                <div key={i} className="bg-white rounded-xl p-3 border border-outline-variant/40 shadow-sm flex items-center gap-3">
+                <div key={i} className="bg-surface rounded-xl p-3 border border-outline-variant/40 shadow-sm flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-surface-variant/50 flex items-center justify-center shrink-0">{m.icon}</div>
                   <div>
                     <div className="text-[10px] font-bold text-outline uppercase tracking-wider">{m.label}</div>
@@ -649,7 +649,7 @@ export function AiGenerator() {
 
               {/* Compliance Panel */}
               <div className="w-72 shrink-0">
-                <Card className="p-5 border-outline-variant/40 shadow-sm bg-white rounded-xl space-y-4">
+                <Card className="p-5 border-outline-variant/40 shadow-sm bg-surface rounded-xl space-y-4">
                   <div className="border-b border-outline-variant pb-3">
                     <h3 className="text-sm font-bold text-on-surface flex items-center gap-2">
                       <Scale className="w-4 h-4 text-[#1e1a8a]" />Labor Compliance
@@ -662,7 +662,7 @@ export function AiGenerator() {
                     <div className={`w-12 h-12 rounded-full border-4 flex items-center justify-center text-sm font-extrabold ${
                       getComplianceViolations().length === 0
                         ? 'border-[#14b8a6] text-[#0d9488] bg-[#14b8a6]/5'
-                        : 'border-[#f59e0b] text-[#b45309] bg-[#f59e0b]/5'
+                        : 'border-[#f59e0b] text-on-warning bg-[#f59e0b]/5'
                     }`}>
                       {Math.max(0, 100 - getComplianceViolations().length * 10)}%
                     </div>

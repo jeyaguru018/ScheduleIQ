@@ -176,7 +176,7 @@ export function CommandCenter() {
       case 'CASHIER': return 'bg-[#14b8a6]/20 text-[#0d9488] border-[#14b8a6]/30';
       case 'STOCKER': return 'bg-[#8b5cf6]/20 text-[#7c3aed] border-[#8b5cf6]/30';
       case 'LEAD_CASHIER': return 'bg-[#1e1a8a]/10 text-[#1e1a8a] border-[#1e1a8a]/20';
-      case 'DELIVERY_BOY': return 'bg-[#f59e0b]/20 text-[#b45309] border-[#f59e0b]/30';
+      case 'DELIVERY_BOY': return 'bg-[#f59e0b]/20 text-on-warning border-[#f59e0b]/30';
       default: return 'bg-surface-variant text-outline border-outline-variant';
     }
   };
@@ -212,7 +212,7 @@ export function CommandCenter() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-surface-variant">
-      <div className="w-full max-w-screen-2xl mx-auto p-6 pb-10 space-y-5">
+      <div className="w-full mx-auto p-6 pb-10 space-y-5">
 
         {/* Page Header */}
         <div className="flex items-center justify-between">
@@ -224,7 +224,7 @@ export function CommandCenter() {
           </div>
           <button
             onClick={() => fetchData(true)}
-            className="flex items-center gap-2 text-sm font-bold text-[#1e1a8a] bg-white border border-outline-variant px-4 py-2 rounded-xl hover:shadow-md transition-all"
+            className="flex items-center gap-2 text-sm font-bold text-[#1e1a8a] bg-surface border border-outline-variant px-4 py-2 rounded-xl hover:shadow-md transition-all"
             disabled={refreshing}
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -235,14 +235,14 @@ export function CommandCenter() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="p-4 bg-gradient-to-br from-[#1e1a8a] to-[#312e9e] border-0 shadow-lg text-white overflow-hidden relative">
-            <div className="absolute -right-4 -top-4 w-20 h-20 bg-white/5 rounded-full" />
+            <div className="absolute -right-4 -top-4 w-20 h-20 bg-surface/5 rounded-full" />
             <div className="flex justify-between items-start mb-3 relative">
               <span className="text-[10px] font-bold text-white/60 uppercase tracking-wider">Weekly Cost</span>
               <DollarSign className="w-4 h-4 text-white/40" />
             </div>
             <div className="text-2xl font-extrabold text-white">₹{data.totalCost?.toLocaleString('en-IN')}</div>
-            <div className="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
-              <div className="bg-white h-full rounded-full transition-all" style={{ width: `${Math.min((data.totalCost / 120000) * 100, 100)}%` }} />
+            <div className="w-full bg-surface/10 h-1.5 rounded-full mt-3 overflow-hidden">
+              <div className="bg-surface h-full rounded-full transition-all" style={{ width: `${Math.min((data.totalCost / 120000) * 100, 100)}%` }} />
             </div>
             <div className="flex justify-between text-[9px] font-bold text-white/50 mt-1">
               <span>{Math.round((data.totalCost / 120000) * 100)}% of cap</span>
@@ -250,7 +250,7 @@ export function CommandCenter() {
             </div>
           </Card>
 
-          <Card className="p-4 bg-white border border-success/20 shadow-sm overflow-hidden relative">
+          <Card className="p-4 bg-surface border border-success/20 shadow-sm overflow-hidden relative">
             <div className="absolute -right-2 -top-2 w-14 h-14 bg-success/5 rounded-full" />
             <div className="flex justify-between items-start mb-3">
               <span className="text-[10px] font-bold text-success uppercase tracking-wider">Coverage</span>
@@ -263,7 +263,7 @@ export function CommandCenter() {
             <div className="text-[10px] font-semibold text-on-surface-variant mt-1">{data.shiftsThisWeek} shifts scheduled</div>
           </Card>
 
-          <Card className="p-4 bg-white border border-outline-variant shadow-sm">
+          <Card className="p-4 bg-surface border border-outline-variant shadow-sm">
             <div className="flex justify-between items-start mb-3">
               <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Pending Swaps</span>
               <ArrowLeftRight className="w-4 h-4 text-[#d97706]" />
@@ -274,7 +274,7 @@ export function CommandCenter() {
             </div>
           </Card>
 
-          <Card className={`p-4 border shadow-sm overflow-hidden relative ${data.noShowRisk > 0 ? 'bg-[#fef2f2] border-error/20' : 'bg-white border-outline-variant'}`}>
+          <Card className={`p-4 border shadow-sm overflow-hidden relative ${data.noShowRisk > 0 ? 'bg-[#fef2f2] border-error/20' : 'bg-surface border-outline-variant'}`}>
             <div className="flex justify-between items-start mb-3">
               <span className={`text-[10px] font-bold uppercase tracking-wider ${data.noShowRisk > 0 ? 'text-error' : 'text-outline'}`}>Critical Alerts</span>
               <AlertTriangle className={`w-4 h-4 ${data.noShowRisk > 0 ? 'text-error' : 'text-outline-variant'}`} />
@@ -288,7 +288,7 @@ export function CommandCenter() {
 
         {/* Interactive Timeline */}
         <Card className="border-outline-variant/40 shadow-sm overflow-hidden">
-          <CardHeader className="py-4 border-b border-outline-variant/40 bg-white">
+          <CardHeader className="py-4 border-b border-outline-variant/40 bg-surface">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -315,14 +315,14 @@ export function CommandCenter() {
                     className={`flex flex-col items-center px-3 py-2 rounded-xl border transition-all shrink-0 ${
                       isActive
                         ? 'bg-[#1e1a8a] border-[#1e1a8a] text-white shadow-md'
-                        : 'bg-white border-outline-variant text-on-surface hover:border-[#1e1a8a]/30 hover:bg-[#1e1a8a]/5'
+                        : 'bg-surface border-outline-variant text-on-surface hover:border-[#1e1a8a]/30 hover:bg-[#1e1a8a]/5'
                     }`}
                   >
                     <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? 'text-white/70' : 'text-outline'}`}>{day.label}</span>
                     <span className={`text-base font-extrabold leading-tight ${isActive ? 'text-white' : 'text-on-surface'}`}>{day.date}</span>
                     {dayShifts.length > 0 && (
                       <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full mt-0.5 ${
-                        isActive ? 'bg-white/20 text-white' : 'bg-[#14b8a6]/10 text-[#0d9488]'
+                        isActive ? 'bg-surface/20 text-white' : 'bg-[#14b8a6]/10 text-[#0d9488]'
                       }`}>
                         {dayShifts.length}
                       </span>
@@ -333,7 +333,7 @@ export function CommandCenter() {
             </div>
           </CardHeader>
 
-          <CardContent className="p-0 bg-white">
+          <CardContent className="p-0 bg-surface">
             {selectedDayShifts.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center text-center px-4">
                 <CalendarDays className="w-10 h-10 text-outline-variant mb-3" />
@@ -402,7 +402,7 @@ export function CommandCenter() {
                               {row.startStr} – {row.endStr}
                             </span>
                             {row.clockStatus === 'CLOCKED_IN' && (
-                              <span className="ml-1 shrink-0 w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                              <span className="ml-1 shrink-0 w-1.5 h-1.5 rounded-full bg-surface animate-pulse" />
                             )}
                           </div>
                         </div>
@@ -474,7 +474,7 @@ export function CommandCenter() {
                         <h4 className="text-sm font-bold text-on-surface flex items-center gap-2 flex-wrap">
                           {alert.name}
                           {alert.type === 'leave' ? (
-                            <span className="text-[9px] font-bold text-[#b45309] bg-[#fffbeb] px-2 py-0.5 rounded-full border border-[#fcd34d]">Pending Leave</span>
+                            <span className="text-[9px] font-bold text-on-warning bg-warning-container px-2 py-0.5 rounded-full border border-warning">Pending Leave</span>
                           ) : (
                             <span className="text-[9px] font-bold text-error bg-error/10 px-2 py-0.5 rounded-full">High No-Show Risk</span>
                           )}
@@ -496,13 +496,13 @@ export function CommandCenter() {
                       </div>
                     </div>
                     {alert.type === 'leave' ? (
-                      <span className="text-[9px] font-bold text-[#b45309] bg-[#fffbeb] px-2.5 py-1.5 rounded-lg border border-[#fcd34d] whitespace-nowrap">Review →</span>
+                      <span className="text-[9px] font-bold text-on-warning bg-warning-container px-2.5 py-1.5 rounded-lg border border-warning whitespace-nowrap">Review →</span>
                     ) : (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={(e) => { e.stopPropagation(); handleMessage(alert.name); }}
-                        className="border-outline-variant text-on-surface hover:text-[#1e1a8a] hover:border-[#1e1a8a]/30 font-bold shadow-sm bg-white whitespace-nowrap"
+                        className="border-outline-variant text-on-surface hover:text-[#1e1a8a] hover:border-[#1e1a8a]/30 font-bold shadow-sm bg-surface whitespace-nowrap"
                       >
                         <MessageCircle className="w-3.5 h-3.5 mr-1.5" />Message
                       </Button>
