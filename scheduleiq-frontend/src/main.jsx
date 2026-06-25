@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
+import { ToastProvider } from './components/common/Toast.jsx'
 
 // ── v2.0 Theme Initialization ─────────────────────────────────────────────
 // Apply the saved theme preference BEFORE React renders to prevent FOUC
@@ -21,6 +22,8 @@ import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <ToastProvider>
+      <App />
+    </ToastProvider>
   </React.StrictMode>,
 )
