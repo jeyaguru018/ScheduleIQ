@@ -197,7 +197,6 @@ export function FairnessEquity() {
               </div>
             </div>
           </Card>
-          </Card>
         ) : employees.length > 0 ? (
           <Card className="shadow-sm border-success/20 bg-success/5 flex items-center p-6 gap-4">
             <CheckCircle2 className="w-8 h-8 text-success" />

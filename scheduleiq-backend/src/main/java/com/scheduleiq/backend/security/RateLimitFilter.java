@@ -56,8 +56,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        String ip = getClientIp(request);
         String path = request.getRequestURI();
+        // Bypass rate limiting for health check and actuator endpoints to ensure reliable deployments
+        if (path.startsWith("/api/auth/health") || path.startsWith("/actuator")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String ip = getClientIp(request);
         String method = request.getMethod();
 
         int limit;
@@ -83,9 +89,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         String key = prefix + ip;
-        Long result = redisTemplate.execute(rateLimitScript, Collections.singletonList(key), String.valueOf(limit), String.valueOf(windowSeconds));
-
-        boolean allowed = (result != null && result == 1L);
+        boolean allowed = true;
+        try {
+            Long result = redisTemplate.execute(rateLimitScript, Collections.singletonList(key), String.valueOf(limit), String.valueOf(windowSeconds));
+            allowed = (result != null && result == 1L);
+        } catch (Exception e) {
+            log.error("Redis rate limiting error for IP [{}], failing open: {}", ip, e.getMessage());
+        }
 
         if (allowed) {
             filterChain.doFilter(request, response);
