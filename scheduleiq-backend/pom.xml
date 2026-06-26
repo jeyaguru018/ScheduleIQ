@@ -128,12 +128,7 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
-        <!-- Bucket4j: Token-bucket rate limiting for abuse prevention -->
-        <dependency>
-            <groupId>com.bucket4j</groupId>
-            <artifactId>bucket4j-core</artifactId>
-            <version>8.7.0</version>
-        </dependency>
+        <!-- Rate Limiting uses Native Redis Lua Script via StringRedisTemplate -->
 
         <!-- Spring Retry: Automatic retry for transient failures (ML service calls) -->
         <dependency>

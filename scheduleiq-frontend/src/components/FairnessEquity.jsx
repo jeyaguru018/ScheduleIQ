@@ -67,7 +67,7 @@ export function FairnessEquity() {
             <p className="text-on-surface-variant mt-1">Real-time analysis of shift distribution and workload balance.</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-outline mr-2">This Week (Oct 15 - 21)</span>
+            <span className="text-sm font-semibold text-on-surface-variant mr-2">This Week (Oct 15 - 21)</span>
             <Button variant="outline" className="bg-surface font-bold shadow-sm">
               <Download className="w-4 h-4 mr-2" />
               Export
@@ -79,7 +79,7 @@ export function FairnessEquity() {
           {/* Donut Chart Card */}
           <Card className="col-span-1 shadow-sm border-outline-variant flex flex-col">
             <CardHeader className="py-4 border-none">
-              <CardTitle className="text-sm uppercase tracking-wider text-outline flex items-center justify-between w-full">
+              <CardTitle className="text-sm uppercase tracking-wider text-on-surface-variant flex items-center justify-between w-full">
                 Store Overall Fairness
                 <TrendingUp className="w-4 h-4 text-success" />
               </CardTitle>
@@ -106,7 +106,7 @@ export function FairnessEquity() {
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <span className="text-4xl font-extrabold text-on-surface leading-none tracking-tighter">{totalHrsScore}</span>
-                  <span className="text-xs font-bold text-outline">/100</span>
+                  <span className="text-xs font-bold text-on-surface-variant">/100</span>
                 </div>
               </div>
               <div className="flex gap-6 mt-4">
@@ -114,7 +114,7 @@ export function FairnessEquity() {
                   <span className="text-sm font-semibold text-outline-variant">No data to display</span>
                 ) : pieData.map((d, i) => (
                   <div key={i} className="flex flex-col items-center text-center">
-                    <span className="text-[10px] font-bold uppercase text-outline mb-1">{d.name}</span>
+                    <span className="text-[10px] font-bold uppercase text-on-surface-variant mb-1">{d.name}</span>
                     <div className="flex items-center gap-1">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }}></div>
                       <span className="text-sm font-extrabold text-on-surface">{d.value}%</span>
@@ -128,7 +128,7 @@ export function FairnessEquity() {
           {/* Employee Fairness Index */}
           <Card className="col-span-2 shadow-sm border-outline-variant flex flex-col">
             <CardHeader className="py-4 border-none">
-              <CardTitle className="text-sm uppercase tracking-wider text-outline flex items-center justify-between w-full">
+              <CardTitle className="text-sm uppercase tracking-wider text-on-surface-variant flex items-center justify-between w-full">
                 Employee Fairness Index
                 <button className="text-xs normal-case text-primary font-bold hover:underline">View All Details</button>
               </CardTitle>
@@ -154,7 +154,7 @@ export function FairnessEquity() {
                       </div>
                     ))}
                   </div>
-                  <div className="mt-8 pt-4 border-t border-outline-variant/50 flex justify-between text-xs font-semibold text-outline">
+                  <div className="mt-8 pt-4 border-t border-outline-variant/50 flex justify-between text-xs font-semibold text-on-surface-variant">
                     <span>Min Target: 70</span>
                     <span>Avg: {avgScore}</span>
                   </div>
@@ -197,12 +197,20 @@ export function FairnessEquity() {
               </div>
             </div>
           </Card>
-        ) : (
+          </Card>
+        ) : employees.length > 0 ? (
           <Card className="shadow-sm border-success/20 bg-success/5 flex items-center p-6 gap-4">
             <CheckCircle2 className="w-8 h-8 text-success" />
             <div>
               <h3 className="text-lg font-bold text-on-surface">Schedule is highly balanced</h3>
               <p className="text-sm text-on-surface-variant">No critical imbalances detected across the workforce. Fairness is maintained.</p>
+            </div>
+          </Card>
+        ) : (
+          <Card className="shadow-sm border-outline-variant bg-surface-variant/20 flex items-center p-6 gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-on-surface">No Data Available</h3>
+              <p className="text-sm text-on-surface-variant">Please add employees to the roster to calculate fairness metrics.</p>
             </div>
           </Card>
         )}

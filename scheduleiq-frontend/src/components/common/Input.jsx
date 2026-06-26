@@ -19,7 +19,7 @@ export const Input = forwardRef(({ className, label, error, icon: Icon, id, ...p
           id={id}
           ref={ref}
           className={cn(
-            "flex h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 text-body-md text-on-surface ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-outline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 transition-colors shadow-sm",
+            "flex h-11 w-full rounded-md border border-on-surface/50 bg-surface px-3 py-2 text-body-md text-on-surface font-semibold ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-on-surface-variant focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 transition-colors shadow-sm",
             Icon && "pl-10",
             error && "border-error focus-visible:ring-error focus-visible:border-error",
             className

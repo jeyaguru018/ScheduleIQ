@@ -37,6 +37,8 @@ public class AutoSchedulerController {
     // v2.0: WebSocket broadcast for real-time schedule publishing notifications
     private final SimpMessagingTemplate messagingTemplate;
 
+    private final com.scheduleiq.backend.service.messaging.ScheduleJobPublisher scheduleJobPublisher;
+
     private Employee getEmployeeForUser(UserDetails userDetails) {
         return employeeRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userDetails.getUsername()));
@@ -49,7 +51,7 @@ public class AutoSchedulerController {
 
     /**
      * POST /api/schedule/generate
-     * Kicks off asynchronous AI schedule generation for a manager's team.
+     * Kicks off asynchronous AI schedule generation for a manager's team via Redis Message Broker.
      */
     @PostMapping("/generate")
     public ResponseEntity<Map<String, String>> generateSchedule(
@@ -65,10 +67,10 @@ public class AutoSchedulerController {
         }
 
         String jobId = UUID.randomUUID().toString();
-        log.info("Schedule generation requested by manager [{}] for week [{} - {}]", manager.getId(), weekStart, weekEnd);
+        log.info("Schedule generation requested by manager [{}] for week [{} - {}]. Enqueueing to Redis...", manager.getId(), weekStart, weekEnd);
 
-        // Kick off CPU-heavy constraint solver asynchronously
-        autoSchedulerService.generateOptimalRoster(jobId, weekStart, weekEnd, budgetCap, manager.getId());
+        // Enqueue the CPU-heavy constraint solver to the Redis Message Broker
+        scheduleJobPublisher.publishJob(jobId, weekStart, weekEnd, budgetCap, manager.getId());
 
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of(
                 "jobId", jobId,

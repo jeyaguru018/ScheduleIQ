@@ -1,14 +1,13 @@
 package com.scheduleiq.backend.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
@@ -16,93 +15,88 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * RateLimitFilter — Token-bucket rate limiting per IP address.
- *
- * Protected endpoints and their limits (hardened per security audit):
- *   POST /api/auth/login         → 5 requests / 15 minutes  (strong brute-force protection)
- *   POST /api/auth/register      → 3 requests / 15 minutes  (signup spam prevention)
- *   POST /api/schedule/generate  → 3 requests / hour        (expensive AI operation)
- *   All other endpoints          → 200 requests / minute    (general API protection)
+ * RateLimitFilter — Distributed Token-bucket rate limiting via Redis Lua Script.
  */
 @Component
 @Slf4j
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    // Separate bucket maps per endpoint type for independent limits
-    private final ConcurrentHashMap<String, Bucket> loginBuckets    = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Bucket> registerBuckets = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Bucket> schedulerBuckets = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Bucket> generalBuckets  = new ConcurrentHashMap<>();
-
+    private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final DefaultRedisScript<Long> rateLimitScript;
+
+    public RateLimitFilter(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+        this.rateLimitScript = new DefaultRedisScript<>();
+        this.rateLimitScript.setResultType(Long.class);
+        // Standard Token Bucket Lua Script
+        this.rateLimitScript.setScriptText(
+                "local key = KEYS[1]\n" +
+                "local limit = tonumber(ARGV[1])\n" +
+                "local window_secs = tonumber(ARGV[2])\n" +
+                "local current = redis.call('GET', key)\n" +
+                "if current and tonumber(current) >= limit then\n" +
+                "  return 0\n" +
+                "end\n" +
+                "current = redis.call('INCR', key)\n" +
+                "if tonumber(current) == 1 then\n" +
+                "  redis.call('EXPIRE', key, window_secs)\n" +
+                "end\n" +
+                "return 1"
+        );
+    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        String ip     = getClientIp(request);
-        String path   = request.getRequestURI();
+        String ip = getClientIp(request);
+        String path = request.getRequestURI();
         String method = request.getMethod();
 
-        Bucket bucket;
+        int limit;
+        int windowSeconds;
+        String prefix;
 
         if ("POST".equals(method) && path.startsWith("/api/auth/login")) {
-            // 5 login attempts per 15 minutes per IP — strong brute-force protection
-            bucket = loginBuckets.computeIfAbsent(ip, k ->
-                    Bucket.builder()
-                            .addLimit(Bandwidth.classic(5, Refill.intervally(5, Duration.ofMinutes(15))))
-                            .build());
-
+            limit = 5;
+            windowSeconds = 15 * 60; // 15 mins
+            prefix = "rl:login:";
         } else if ("POST".equals(method) && path.startsWith("/api/auth/register")) {
-            // 3 registrations per 15 minutes per IP — stops signup spam
-            bucket = registerBuckets.computeIfAbsent(ip, k ->
-                    Bucket.builder()
-                            .addLimit(Bandwidth.classic(3, Refill.intervally(3, Duration.ofMinutes(15))))
-                            .build());
-
+            limit = 3;
+            windowSeconds = 15 * 60; // 15 mins
+            prefix = "rl:register:";
         } else if ("POST".equals(method) && path.startsWith("/api/schedule/generate")) {
-            // 3 AI generation jobs per hour — very expensive CPU operation
-            bucket = schedulerBuckets.computeIfAbsent(ip, k ->
-                    Bucket.builder()
-                            .addLimit(Bandwidth.classic(3, Refill.intervally(3, Duration.ofHours(1))))
-                            .build());
-
+            limit = 3;
+            windowSeconds = 60 * 60; // 1 hr
+            prefix = "rl:generate:";
         } else {
-            // General API: 200 requests/minute
-            bucket = generalBuckets.computeIfAbsent(ip, k ->
-                    Bucket.builder()
-                            .addLimit(Bandwidth.classic(200, Refill.greedy(200, Duration.ofMinutes(1))))
-                            .build());
+            limit = 200;
+            windowSeconds = 60; // 1 min
+            prefix = "rl:general:";
         }
 
-        if (bucket.tryConsume(1)) {
+        String key = prefix + ip;
+        Long result = redisTemplate.execute(rateLimitScript, Collections.singletonList(key), String.valueOf(limit), String.valueOf(windowSeconds));
+
+        boolean allowed = (result != null && result == 1L);
+
+        if (allowed) {
             filterChain.doFilter(request, response);
         } else {
             log.warn("Rate limit exceeded for IP [{}] on [{}] [{}]", ip, method, path);
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-            // Inform clients how long to wait before retrying
-            String retryAfter = path.contains("/api/auth/") ? "900"
-                    : path.contains("/api/schedule/generate") ? "3600"
-                    : "60";
-            response.setHeader("Retry-After", retryAfter);
-            response.setHeader("X-RateLimit-Limit",
-                    path.contains("/api/auth/login") ? "5"
-                    : path.contains("/api/auth/register") ? "3"
-                    : path.contains("/api/schedule/generate") ? "3"
-                    : "200");
-            response.setHeader("X-RateLimit-Window",
-                    path.contains("/api/auth/") ? "15m"
-                    : path.contains("/api/schedule/generate") ? "1h"
-                    : "1m");
+            response.setHeader("Retry-After", String.valueOf(windowSeconds));
+            response.setHeader("X-RateLimit-Limit", String.valueOf(limit));
+            response.setHeader("X-RateLimit-Window", windowSeconds + "s");
 
             Map<String, Object> body = Map.of(
                     "timestamp", Instant.now().toString(),
@@ -110,22 +104,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
                     "error", "Too Many Requests",
                     "message", "Rate limit exceeded. Please wait before sending more requests.",
                     "path", path,
-                    "retryAfterSeconds", Integer.parseInt(retryAfter)
+                    "retryAfterSeconds", windowSeconds
             );
             objectMapper.writeValue(response.getWriter(), body);
         }
     }
 
-    /**
-     * Extracts client IP, hardened against X-Forwarded-For header injection.
-     * We only trust the leftmost IP in XFF (which is the actual client).
-     * We validate it looks like an IPv4/IPv6 address to prevent injection.
-     */
     private String getClientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
             String firstIp = forwarded.split(",")[0].trim();
-            // Only accept if it looks like a valid IP (IPv4 or IPv6)
             if (firstIp.matches("[0-9a-fA-F.:]+") && firstIp.length() <= 45) {
                 return firstIp;
             }

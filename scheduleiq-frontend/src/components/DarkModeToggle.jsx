@@ -63,11 +63,7 @@ export function DarkModeToggle({ className = '' }) {
         ${className}
       `}
     >
-      {/* Track background icons */}
-      <span className="absolute inset-0 flex items-center justify-between px-1.5 pointer-events-none">
-        <Moon className={`w-3.5 h-3.5 transition-opacity duration-300 ${isDark ? 'opacity-100 text-white' : 'opacity-0'}`} />
-        <Sun  className={`w-3.5 h-3.5 transition-opacity duration-300 ${isDark ? 'opacity-0' : 'opacity-60 text-on-surface-variant'}`} />
-      </span>
+      {/* Track background icons removed to prevent duplicate sun/moon confusion */}
 
       {/* Sliding knob */}
       <span

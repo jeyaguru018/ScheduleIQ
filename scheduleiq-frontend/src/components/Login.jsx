@@ -178,7 +178,7 @@ export function Login({ onLoginSuccess }) {
               </div>
 
               {/* Role Selector */}
-              <div className="flex p-1 bg-surface-variant rounded-lg border border-outline-variant mb-6 shrink-0">
+              <div className="flex p-1 bg-surface-variant rounded-lg border border-on-surface/50 mb-6 shrink-0">
                 <button 
                   onClick={() => setRole('manager')}
                   className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${role === 'manager' ? 'bg-white text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
