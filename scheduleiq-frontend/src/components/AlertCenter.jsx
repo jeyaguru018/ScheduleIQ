@@ -123,9 +123,9 @@ export function AlertCenter() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#fafbfc]">
+      <div className="flex-1 flex items-center justify-center bg-surface-variant">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#1e1a8a]/20 border-t-[#1e1a8a] rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-primary/20 border-t-[#1e1a8a] rounded-full animate-spin" />
           <p className="text-sm font-semibold text-on-surface-variant">Loading Alert Center...</p>
         </div>
       </div>
@@ -142,7 +142,7 @@ export function AlertCenter() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-on-surface tracking-tight flex items-center gap-2">
-              <Bell className="w-6 h-6 text-[#1e1a8a]" />Alert Center
+              <Bell className="w-6 h-6 text-primary" />Alert Center
             </h2>
             <p className="text-sm text-on-surface-variant mt-0.5">
               Manage no-show risks and pending leave requests for your team.
@@ -151,7 +151,7 @@ export function AlertCenter() {
           <button
             onClick={() => loadData(true)}
             disabled={refreshing}
-            className="flex items-center gap-2 text-sm font-bold text-[#1e1a8a] bg-surface border border-outline-variant px-4 py-2 rounded-xl hover:shadow-md transition-all"
+            className="flex items-center gap-2 text-sm font-bold text-primary bg-surface border border-outline-variant px-4 py-2 rounded-xl hover:shadow-md transition-all"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Refreshing...' : 'Refresh'}
@@ -259,7 +259,7 @@ export function AlertCenter() {
                     </div>
 
                     {/* Right: Action */}
-                    <div className="md:w-52 p-5 flex flex-col justify-center gap-3 bg-[#fafbfc]">
+                    <div className="md:w-52 p-5 flex flex-col justify-center gap-3 bg-surface-variant">
                       <p className="text-[10px] font-bold text-outline uppercase tracking-wider">Operational Impact</p>
                       <div className="flex items-start gap-2">
                         <Store className="w-4 h-4 text-[#d97706] shrink-0 mt-0.5" />
@@ -269,7 +269,7 @@ export function AlertCenter() {
                       </div>
                       <Button
                         variant="primary"
-                        className="w-full bg-[#1e1a8a] hover:bg-[#1e1a8a]/90 text-white shadow-sm py-2.5 font-bold mt-1"
+                        className="w-full bg-primary hover:bg-primary/90 text-white shadow-sm py-2.5 font-bold mt-1"
                         onClick={() => handleFindReplacement(alertItem)}
                       >
                         <Search className="w-4 h-4 mr-2" />Find Replacement
@@ -285,7 +285,7 @@ export function AlertCenter() {
         {/* Pending Leave Requests */}
         <div>
           <h3 className="text-base font-bold text-on-surface flex items-center gap-2 mb-4">
-            <CalendarRange className="w-4 h-4 text-[#1e1a8a]" />
+            <CalendarRange className="w-4 h-4 text-primary" />
             Pending Leave Requests
             {leaves.length > 0 && (
               <span className="text-xs font-bold text-on-warning bg-warning-container px-2 py-0.5 rounded-full border border-warning">{leaves.length} pending</span>
@@ -320,7 +320,7 @@ export function AlertCenter() {
 
                         <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                           <span className="flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant">
-                            <CalendarRange className="w-3.5 h-3.5 text-[#1e1a8a]" />
+                            <CalendarRange className="w-3.5 h-3.5 text-primary" />
                             {leaveDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                           </span>
                         </div>
@@ -345,7 +345,7 @@ export function AlertCenter() {
                         <Button
                           variant="primary"
                           size="sm"
-                          className="bg-[#1e1a8a] text-white hover:bg-[#1e1a8a]/90 font-bold px-3 py-2 rounded-xl shadow-sm"
+                          className="bg-primary text-on-primary hover:bg-primary/90 font-bold px-3 py-2 rounded-xl shadow-sm"
                           onClick={() => handleApproveLeave(l.id, empName)}
                           isLoading={isProcessing}
                           disabled={isProcessing}
@@ -380,7 +380,7 @@ export function AlertCenter() {
 
           {loadingBackups ? (
             <div className="p-8 text-center">
-              <div className="w-10 h-10 border-4 border-[#1e1a8a]/20 border-t-[#1e1a8a] rounded-full animate-spin mx-auto mb-3" />
+              <div className="w-10 h-10 border-4 border-primary/20 border-t-[#1e1a8a] rounded-full animate-spin mx-auto mb-3" />
               <p className="text-sm font-semibold text-outline">Calculating eligible replacements...</p>
             </div>
           ) : backups.length === 0 ? (

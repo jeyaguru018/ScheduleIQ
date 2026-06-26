@@ -254,7 +254,7 @@ export function Login({ onLoginSuccess }) {
                 <Button 
                   type="submit"
                   variant="primary"
-                  className="w-full mt-2 bg-[#1e1a8a] hover:bg-[#1e1a8a]/90 text-white shadow-md py-3 text-base"
+                  className="w-full mt-2 bg-primary hover:bg-primary/90 text-white shadow-md py-3 text-base"
                   isLoading={loading}
                 >
                   Sign In
@@ -273,7 +273,7 @@ export function Login({ onLoginSuccess }) {
                   <button 
                     type="button" 
                     onClick={() => { setError(''); setIsRegistering(true); }}
-                    className="text-sm font-bold text-[#1e1a8a] hover:underline"
+                    className="text-sm font-bold text-primary hover:underline"
                   >
                     Register Store Account
                   </button>
@@ -363,7 +363,7 @@ export function Login({ onLoginSuccess }) {
                 <Button 
                   type="submit"
                   variant="primary"
-                  className="w-full mt-2 bg-[#1e1a8a] hover:bg-[#1e1a8a]/90 text-white shadow-md py-3 text-base"
+                  className="w-full mt-2 bg-primary hover:bg-primary/90 text-white shadow-md py-3 text-base"
                   isLoading={loading}
                 >
                   Create Account
@@ -374,7 +374,7 @@ export function Login({ onLoginSuccess }) {
                   <button 
                     type="button" 
                     onClick={() => { setError(''); setIsRegistering(false); }}
-                    className="text-sm font-bold text-[#1e1a8a] hover:underline"
+                    className="text-sm font-bold text-primary hover:underline"
                   >
                     Sign In
                   </button>

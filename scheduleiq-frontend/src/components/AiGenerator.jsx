@@ -318,7 +318,7 @@ export function AiGenerator() {
       </div>
       <button
         onClick={() => onChange(!checked)}
-        className={`w-11 h-6 rounded-full relative transition-all duration-200 shrink-0 ${checked ? 'bg-[#1e1a8a]' : 'bg-outline-variant'}`}
+        className={`w-11 h-6 rounded-full relative transition-all duration-200 shrink-0 ${checked ? 'bg-primary' : 'bg-outline-variant'}`}
         type="button"
       >
         <div className={`w-4 h-4 bg-surface rounded-full absolute top-1 shadow-sm transition-all duration-200 ${checked ? 'left-6' : 'left-1'}`} />
@@ -352,9 +352,9 @@ export function AiGenerator() {
         <div className="p-5 flex-1 overflow-y-auto space-y-5">
 
           {/* Team summary */}
-          <div className="bg-[#1e1a8a]/5 rounded-xl p-3 border border-[#1e1a8a]/10 flex items-center gap-3">
-            <div className="w-9 h-9 bg-[#1e1a8a]/10 rounded-lg flex items-center justify-center">
-              <Users className="w-4 h-4 text-[#1e1a8a]" />
+          <div className="bg-primary/5 rounded-xl p-3 border border-primary/10 flex items-center gap-3">
+            <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Users className="w-4 h-4 text-primary" />
             </div>
             <div>
               <div className="text-sm font-bold text-on-surface">{employees.length} Employee{employees.length !== 1 ? 's' : ''} in Team</div>
@@ -370,9 +370,9 @@ export function AiGenerator() {
                 type="date"
                 value={targetWeekStart}
                 onChange={e => setTargetWeekStart(e.target.value)}
-                className="w-full bg-surface border border-outline-variant rounded-xl p-2.5 pl-10 font-semibold text-sm outline-none shadow-sm focus:border-[#1e1a8a] focus:ring-2 focus:ring-[#1e1a8a]/20 cursor-pointer text-on-surface"
+                className="w-full bg-surface border border-outline-variant rounded-xl p-2.5 pl-10 font-semibold text-sm outline-none shadow-sm focus:border-primary focus:ring-2 focus:ring-[#1e1a8a]/20 cursor-pointer text-on-surface"
               />
-              <CalendarIcon className="w-4 h-4 text-[#1e1a8a] absolute left-3 pointer-events-none" />
+              <CalendarIcon className="w-4 h-4 text-primary absolute left-3 pointer-events-none" />
             </div>
             <p className="text-[10px] text-outline mt-1.5">
               Week: {new Date(targetWeekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {(() => { const e = new Date(targetWeekStart); e.setDate(e.getDate() + 6); return e.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); })()}
@@ -387,7 +387,7 @@ export function AiGenerator() {
               className="flex items-center justify-between px-3 py-2.5 border border-outline-variant rounded-xl bg-surface shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-2 overflow-hidden">
-                <MapPin className="w-4 h-4 text-[#1e1a8a] shrink-0" />
+                <MapPin className="w-4 h-4 text-primary shrink-0" />
                 <span className="text-sm font-semibold text-on-surface truncate">{selectedLocations.join(', ')}</span>
               </div>
               <span className="text-xs font-bold text-outline shrink-0">▼</span>
@@ -400,7 +400,7 @@ export function AiGenerator() {
                       type="checkbox"
                       checked={selectedLocations.includes(loc)}
                       onChange={() => toggleLocationSelection(loc)}
-                      className="rounded text-[#1e1a8a] focus:ring-[#1e1a8a] cursor-pointer"
+                      className="rounded text-primary focus:ring-[#1e1a8a] cursor-pointer"
                     />
                     {loc}
                   </label>
@@ -408,7 +408,7 @@ export function AiGenerator() {
                 <div className="border-t border-outline-variant pt-2 mt-1">
                   <button
                     onClick={() => { setShowLocationDropdown(false); setIsAddLocationOpen(true); }}
-                    className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold text-[#1e1a8a] hover:bg-[#1e1a8a]/5 rounded-lg transition-colors"
+                    className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold text-primary hover:bg-primary/5 rounded-lg transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />Add Location
                   </button>
@@ -436,7 +436,7 @@ export function AiGenerator() {
               </div>
               <input
                 type="number"
-                className="w-full pl-8 pr-3 py-2.5 border border-outline-variant rounded-xl font-semibold shadow-sm focus:ring-2 focus:ring-[#1e1a8a]/20 focus:border-[#1e1a8a] outline-none text-sm"
+                className="w-full pl-8 pr-3 py-2.5 border border-outline-variant rounded-xl font-semibold shadow-sm focus:ring-2 focus:ring-[#1e1a8a]/20 focus:border-primary outline-none text-sm"
                 value={budget}
                 onChange={e => setBudget(Number(e.target.value))}
               />
@@ -479,8 +479,8 @@ export function AiGenerator() {
       <div className="flex-1 overflow-auto p-6">
         {!schedule && !loading && (
           <div className="h-full flex flex-col items-center justify-center text-outline">
-            <div className="w-20 h-20 bg-[#1e1a8a]/5 rounded-2xl flex items-center justify-center mb-5">
-              <SparklesIcon className="w-10 h-10 text-[#1e1a8a]/40" />
+            <div className="w-20 h-20 bg-primary/5 rounded-2xl flex items-center justify-center mb-5">
+              <SparklesIcon className="w-10 h-10 text-primary/40" />
             </div>
             <p className="text-xl font-bold text-on-surface mb-1">Ready to generate schedule</p>
             <p className="text-sm text-on-surface-variant max-w-xs text-center">
@@ -500,9 +500,9 @@ export function AiGenerator() {
 
         {loading && (
           <div className="h-full flex flex-col items-center justify-center">
-            <div className="w-20 h-20 rounded-2xl bg-[#1e1a8a]/5 flex items-center justify-center mb-6 relative">
-              <SparklesIcon className="w-10 h-10 text-[#1e1a8a]" />
-              <div className="absolute inset-0 rounded-2xl border-4 border-[#1e1a8a]/20 border-t-[#1e1a8a] animate-spin" />
+            <div className="w-20 h-20 rounded-2xl bg-primary/5 flex items-center justify-center mb-6 relative">
+              <SparklesIcon className="w-10 h-10 text-primary" />
+              <div className="absolute inset-0 rounded-2xl border-4 border-primary/20 border-t-[#1e1a8a] animate-spin" />
             </div>
             <h3 className="text-lg font-bold text-on-surface mb-1">{generationStatus}</h3>
             <p className="text-sm text-on-surface-variant text-center max-w-xs">
@@ -551,7 +551,7 @@ export function AiGenerator() {
             {/* Metrics Row */}
             <div className="grid grid-cols-4 gap-3 mb-5">
               {[
-                { icon: <Clock className="w-4 h-4 text-[#1e1a8a]" />, label: 'Generated in', value: `${generationMetrics.duration}s` },
+                { icon: <Clock className="w-4 h-4 text-primary" />, label: 'Generated in', value: `${generationMetrics.duration}s` },
                 { icon: <CheckCircle2 className="w-4 h-4 text-success" />, label: 'Coverage', value: `${generationMetrics.coverage}%` },
                 { icon: <DollarSign className="w-4 h-4 text-[#8b5cf6]" />, label: 'Est. Cost', value: `₹${generationMetrics.cost.toLocaleString()}` },
                 { icon: <TrendingUp className="w-4 h-4 text-[#14b8a6]" />, label: 'Assigned', value: `${generationMetrics.assigned}/${generationMetrics.total}` }
@@ -652,13 +652,13 @@ export function AiGenerator() {
                 <Card className="p-5 border-outline-variant/40 shadow-sm bg-surface rounded-xl space-y-4">
                   <div className="border-b border-outline-variant pb-3">
                     <h3 className="text-sm font-bold text-on-surface flex items-center gap-2">
-                      <Scale className="w-4 h-4 text-[#1e1a8a]" />Labor Compliance
+                      <Scale className="w-4 h-4 text-primary" />Labor Compliance
                     </h3>
                     <p className="text-[10px] text-on-surface-variant mt-0.5">Real-time labor law check</p>
                   </div>
 
                   {/* Score */}
-                  <div className="flex items-center gap-3 bg-[#fafbfc] p-3 rounded-xl border border-outline-variant/40">
+                  <div className="flex items-center gap-3 bg-surface-variant p-3 rounded-xl border border-outline-variant/40">
                     <div className={`w-12 h-12 rounded-full border-4 flex items-center justify-center text-sm font-extrabold ${
                       getComplianceViolations().length === 0
                         ? 'border-[#14b8a6] text-[#0d9488] bg-[#14b8a6]/5'
@@ -709,7 +709,7 @@ export function AiGenerator() {
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" type="button" onClick={() => setIsAddLocationOpen(false)}>Cancel</Button>
-            <Button variant="primary" type="submit" className="bg-[#1e1a8a] text-white">Create Location</Button>
+            <Button variant="primary" type="submit" className="bg-primary text-on-primary">Create Location</Button>
           </div>
         </form>
       </Modal>

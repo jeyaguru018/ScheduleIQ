@@ -40,7 +40,7 @@ export function FairnessEquity() {
     .map(e => {
       const score = Math.round((e.fairnessScore || 0) * 100);
       let color = 'bg-[#14b8a6]';
-      if (score < 80) color = 'bg-[#1e1a8a]';
+      if (score < 80) color = 'bg-primary';
       if (score < 65) color = 'bg-[#cbd5e1]';
       if (score < 50) color = 'bg-[#ef4444]';
       return {
@@ -166,11 +166,11 @@ export function FairnessEquity() {
 
         {/* AI Imbalance Insight */}
         {criticalEmp ? (
-          <Card className="shadow-sm border border-[#1e1a8a]/20 bg-gradient-to-r from-white to-[#1e1a8a]/[0.02]">
+          <Card className="shadow-sm border border-primary/20 bg-gradient-to-r from-white to-[#1e1a8a]/[0.02]">
             <div className="flex flex-col md:flex-row items-stretch min-h-[140px]">
               <div className="p-6 md:w-2/3 border-b md:border-b-0 md:border-r border-outline-variant/50">
                 <div className="flex items-center gap-3 mb-3">
-                  <Sparkles className="w-5 h-5 text-[#1e1a8a]" />
+                  <Sparkles className="w-5 h-5 text-primary" />
                   <h3 className="text-lg font-bold text-on-surface">AI Imbalance Insight</h3>
                   <span className="bg-[#fef2f2] text-error border border-error/20 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Critical Flag</span>
                 </div>
@@ -190,7 +190,7 @@ export function FairnessEquity() {
                   Run auto-rebalance for upcoming shifts.
                 </p>
                 <div className="flex gap-3">
-                  <Button variant="primary" className="flex-1 bg-[#1e1a8a] shadow-sm">
+                  <Button variant="primary" className="flex-1 bg-primary shadow-sm">
                     <Sparkles className="w-4 h-4 mr-2" /> Auto-Rebalance
                   </Button>
                 </div>

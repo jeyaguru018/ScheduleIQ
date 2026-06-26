@@ -144,16 +144,16 @@ export function SwapMarketplace() {
         {/* Tabs */}
         <div className="flex gap-8 border-b border-outline-variant mb-6 shrink-0">
           <button 
-            className={`pb-4 text-sm font-bold border-b-2 flex items-center gap-2 transition-colors ${activeTab === 'pending' ? 'border-[#1e1a8a] text-[#1e1a8a]' : 'border-transparent text-outline hover:text-on-surface'}`}
+            className={`pb-4 text-sm font-bold border-b-2 flex items-center gap-2 transition-colors ${activeTab === 'pending' ? 'border-primary text-primary' : 'border-transparent text-outline hover:text-on-surface'}`}
             onClick={() => setActiveTab('pending')}
           >
-            Pending Review <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'pending' ? 'bg-[#1e1a8a]/10 text-[#1e1a8a]' : 'bg-surface-variant text-outline'}`}>{pendingCount}</span>
+            Pending Review <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'pending' ? 'bg-primary/10 text-primary' : 'bg-surface-variant text-outline'}`}>{pendingCount}</span>
           </button>
           <button 
-            className={`pb-4 text-sm font-bold border-b-2 flex items-center gap-2 transition-colors ${activeTab === 'approved' ? 'border-[#1e1a8a] text-[#1e1a8a]' : 'border-transparent text-outline hover:text-on-surface'}`}
+            className={`pb-4 text-sm font-bold border-b-2 flex items-center gap-2 transition-colors ${activeTab === 'approved' ? 'border-primary text-primary' : 'border-transparent text-outline hover:text-on-surface'}`}
             onClick={() => setActiveTab('approved')}
           >
-            Approved <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'approved' ? 'bg-[#1e1a8a]/10 text-[#1e1a8a]' : 'bg-surface-variant text-outline'}`}>{approvedCount}</span>
+            Approved <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'approved' ? 'bg-primary/10 text-primary' : 'bg-surface-variant text-outline'}`}>{approvedCount}</span>
           </button>
         </div>
 
@@ -232,7 +232,7 @@ export function SwapMarketplace() {
                       </Button>
                       <Button 
                         variant="outline" 
-                        className="font-bold text-[#1e1a8a] border-[#1e1a8a] hover:bg-[#1e1a8a]/5 shadow-sm text-xs py-1.5 px-3"
+                        className="font-bold text-primary border-primary hover:bg-primary/5 shadow-sm text-xs py-1.5 px-3"
                         onClick={() => {
                           setSelectedSwapForBackup(swap);
                           if (swap.rawSwap && swap.rawSwap.requesterShift) {
@@ -297,7 +297,7 @@ export function SwapMarketplace() {
                   <Button 
                     variant="primary" 
                     size="sm"
-                    className="bg-[#1e1a8a] text-white text-xs font-bold py-1.5 px-3"
+                    className="bg-primary text-on-primary text-xs font-bold py-1.5 px-3"
                     onClick={() => {
                       if (selectedSwapForBackup.rawSwap && selectedSwapForBackup.rawSwap.requesterShift) {
                         handleAssignBackup(selectedSwapForBackup.rawSwap.requesterShift.id, emp.id, selectedSwapForBackup.id);

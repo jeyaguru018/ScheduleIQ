@@ -202,7 +202,7 @@ export function ControlRoom() {
         <div className="flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-3xl font-bold text-on-surface tracking-tight flex items-center gap-2">
-              <Cpu className="w-8 h-8 text-[#1e1a8a] animate-pulse" />
+              <Cpu className="w-8 h-8 text-primary animate-pulse" />
               Live Operations Control Center
             </h2>
             <p className="text-on-surface-variant mt-1">Real-time floor allocations and interactive natural language assistant.</p>
@@ -217,11 +217,11 @@ export function ControlRoom() {
           
           {/* Left Side: Store Floorplan & Duty Status */}
           <div className="flex-1 bg-surface border border-outline-variant rounded-2xl p-6 flex flex-col overflow-hidden shadow-sm">
-            <h3 className="text-lg font-bold text-[#1e1a8a] mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
               <MapPin className="w-5 h-5" /> Live Store Map (Chennai Store #1)
             </h3>
             
-            <div className="flex-1 relative border border-dashed border-outline-variant rounded-xl p-4 bg-[#fafbfc] grid grid-cols-2 grid-rows-2 gap-4">
+            <div className="flex-1 relative border border-dashed border-outline-variant rounded-xl p-4 bg-surface-variant grid grid-cols-2 grid-rows-2 gap-4">
               
               {/* Zone A: Checkout Desks (Cashiers) */}
               <div className="border border-outline-variant rounded-xl p-4 bg-surface shadow-sm flex flex-col">
@@ -310,7 +310,7 @@ export function ControlRoom() {
                     <span className="text-xs text-outline italic">No employees registered.</span>
                   ) : (
                     employees.filter(e => e.role !== 'MANAGER' && !todayShifts.some(s => s.employee && s.employee.id === e.id)).map(emp => (
-                      <div key={emp.id} className="flex items-center gap-1.5 bg-[#fafbfc] border border-outline-variant/60 rounded-full px-2 py-0.5 animate-in fade-in duration-200">
+                      <div key={emp.id} className="flex items-center gap-1.5 bg-surface-variant border border-outline-variant/60 rounded-full px-2 py-0.5 animate-in fade-in duration-200">
                         <Avatar name={emp.name} size="xs" />
                         <span className="text-[9px] font-extrabold text-on-surface">{emp.name}</span>
                       </div>
@@ -326,7 +326,7 @@ export function ControlRoom() {
           <div className="w-full lg:w-96 bg-surface border border-outline-variant rounded-2xl flex flex-col overflow-hidden shadow-sm">
             <div className="p-4 border-b border-outline-variant bg-surface flex items-center justify-between shrink-0">
               <h3 className="font-bold text-on-surface flex items-center gap-2 text-sm uppercase tracking-wider">
-                <Sparkles className="w-4 h-4 text-[#1e1a8a]" /> Command Assistant
+                <Sparkles className="w-4 h-4 text-primary" /> Command Assistant
               </h3>
               <span className="text-[9px] font-extrabold text-success bg-success/10 border border-success/20 px-2 py-0.5 rounded-full uppercase tracking-wider">Agent Online</span>
             </div>
@@ -337,8 +337,8 @@ export function ControlRoom() {
                 <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] rounded-xl p-3.5 text-xs leading-relaxed ${
                     msg.sender === 'user' 
-                      ? 'bg-[#1e1a8a] text-white rounded-tr-none' 
-                      : 'bg-[#fafbfc] text-on-surface border border-outline-variant/60 rounded-tl-none font-medium'
+                      ? 'bg-primary text-on-primary rounded-tr-none' 
+                      : 'bg-surface-variant text-on-surface border border-outline-variant/60 rounded-tl-none font-medium'
                   }`}>
                     <p className="whitespace-pre-line">{msg.text}</p>
                   </div>
@@ -346,7 +346,7 @@ export function ControlRoom() {
               ))}
               {isProcessing && (
                 <div className="flex justify-start">
-                  <div className="bg-[#fafbfc] border border-outline-variant/60 rounded-xl rounded-tl-none p-3.5 flex items-center gap-2 text-xs font-semibold text-outline">
+                  <div className="bg-surface-variant border border-outline-variant/60 rounded-xl rounded-tl-none p-3.5 flex items-center gap-2 text-xs font-semibold text-outline">
                     <div className="flex gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-outline animate-bounce"></span>
                       <span className="w-1.5 h-1.5 rounded-full bg-outline animate-bounce [animation-delay:0.2s]"></span>
@@ -367,7 +367,7 @@ export function ControlRoom() {
                 disabled={isProcessing}
                 className="flex-1 h-10 text-xs shadow-sm bg-surface"
               />
-              <Button type="submit" variant="primary" className="bg-[#1e1a8a] h-10 w-10 p-0 flex items-center justify-center shrink-0 shadow" disabled={isProcessing}>
+              <Button type="submit" variant="primary" className="bg-primary h-10 w-10 p-0 flex items-center justify-center shrink-0 shadow" disabled={isProcessing}>
                 <Send className="w-4 h-4 text-white" />
               </Button>
             </form>

@@ -189,7 +189,7 @@ export function EmployeeRoster() {
 
   const roleColor = (role) => {
     switch (role) {
-      case 'MANAGER': return 'bg-[#1e1a8a]/10 text-[#1e1a8a]';
+      case 'MANAGER': return 'bg-primary/10 text-primary';
       case 'CASHIER': return 'bg-teal-50 text-teal-700';
       case 'STOCKER': return 'bg-purple-50 text-purple-700';
       case 'LEAD_CASHIER': return 'bg-blue-50 text-blue-700';
@@ -207,8 +207,8 @@ export function EmployeeRoster() {
           <CardHeader className="px-6 py-5 border-b border-outline-variant bg-gradient-to-r from-white to-surface-variant/20">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#1e1a8a]/8 flex items-center justify-center shadow-3d-btn">
-                  <Users className="w-5 h-5 text-[#1e1a8a]" />
+                <div className="w-10 h-10 rounded-xl bg-primary/8 flex items-center justify-center shadow-3d-btn">
+                  <Users className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <CardTitle className="text-xl font-bold text-on-surface">Employee Roster</CardTitle>
@@ -217,7 +217,7 @@ export function EmployeeRoster() {
               </div>
               <Button
                 onClick={() => setIsAddModalOpen(true)}
-                className="bg-[#1e1a8a] hover:bg-[#1e1a8a]/90 text-white font-bold shadow-3d-btn-primary active-press"
+                className="bg-primary hover:bg-primary/90 text-on-primary font-bold shadow-3d-btn-primary active-press"
               >
                 <UserPlus className="w-4 h-4 mr-2" />Add Employee
               </Button>
@@ -232,7 +232,7 @@ export function EmployeeRoster() {
                 <div className="flex items-center gap-2 text-sm font-bold text-on-surface-variant bg-surface-variant/40 px-3 py-1.5 rounded-lg">
                   <Users className="w-4 h-4" />
                   Team Directory
-                  <span className="ml-1 bg-[#1e1a8a]/10 text-[#1e1a8a] text-xs font-extrabold px-2 py-0.5 rounded-full">
+                  <span className="ml-1 bg-primary/10 text-primary text-xs font-extrabold px-2 py-0.5 rounded-full">
                     {filtered.length} TOTAL
                   </span>
                 </div>
@@ -264,7 +264,7 @@ export function EmployeeRoster() {
                       <tr
                         key={emp.id}
                         onClick={() => setSelectedEmp(emp)}
-                        className={`border-b border-outline-variant/50 cursor-pointer hover-lift transition-all ${selectedEmp?.id === emp.id ? 'bg-[#1e1a8a]/4 shadow-3d-active' : 'hover:bg-surface-variant/30'}`}
+                        className={`border-b border-outline-variant/50 cursor-pointer hover-lift transition-all ${selectedEmp?.id === emp.id ? 'bg-primary/4 shadow-3d-active' : 'hover:bg-surface-variant/30'}`}
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -324,7 +324,7 @@ export function EmployeeRoster() {
               <div>
                 <h3 className="text-xl font-bold text-on-surface">{selectedEmp.name}</h3>
                 <p className="text-xs font-semibold text-on-surface-variant">{getEmpDisplayId(selectedEmp)} • Joined {new Date(selectedEmp.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
-                <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${selectedEmp.role === 'MANAGER' ? 'bg-[#1e1a8a]/10 text-[#1e1a8a]' : 'bg-[#14b8a6]/10 text-[#0d9488]'}`}>
+                <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${selectedEmp.role === 'MANAGER' ? 'bg-primary/10 text-primary' : 'bg-[#14b8a6]/10 text-[#0d9488]'}`}>
                   {selectedEmp.role}
                 </span>
               </div>
@@ -338,13 +338,13 @@ export function EmployeeRoster() {
           <div className="p-5 flex gap-3 border-b border-outline-variant">
             <button
               onClick={() => { setIsMessageOpen(v => !v); setIsAvailabilityOpen(false); setIsSkillsOpen(false); setIsProfileOpen(false); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border transition-all active-press shadow-3d-btn ${isMessageOpen ? 'bg-[#1e1a8a] text-white border-[#1e1a8a]' : 'bg-surface text-on-surface border-outline-variant hover:border-[#1e1a8a]/30 hover:bg-[#1e1a8a]/5'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border transition-all active-press shadow-3d-btn ${isMessageOpen ? 'bg-primary text-on-primary border-primary' : 'bg-surface text-on-surface border-outline-variant hover:border-primary/30 hover:bg-primary/5'}`}
             >
               <MessageCircle className="w-4 h-4" /> Message
             </button>
             <button
               onClick={() => { openEdit(selectedEmp); }}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border bg-surface text-on-surface border-outline-variant hover:border-[#1e1a8a]/30 hover:bg-[#1e1a8a]/5 transition-all active-press shadow-3d-btn"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border bg-surface text-on-surface border-outline-variant hover:border-primary/30 hover:bg-primary/5 transition-all active-press shadow-3d-btn"
             >
               <Settings2 className="w-4 h-4" /> Adjust
             </button>
@@ -354,7 +354,7 @@ export function EmployeeRoster() {
           {isMessageOpen && (
             <div className="mx-5 mt-4 mb-2 rounded-xl border border-outline-variant bg-surface-variant/20 overflow-hidden">
               <div className="px-4 py-3 border-b border-outline-variant flex items-center gap-2 bg-surface">
-                <MessageCircle className="w-4 h-4 text-[#1e1a8a]" />
+                <MessageCircle className="w-4 h-4 text-primary" />
                 <span className="text-sm font-bold text-on-surface">Message {selectedEmp.name.split(' ')[0]}</span>
               </div>
               <div className="p-3 min-h-[100px] max-h-[160px] overflow-y-auto flex flex-col gap-2">
@@ -363,9 +363,9 @@ export function EmployeeRoster() {
                 )}
                 {sentMessages.map((m, i) => (
                   <div key={i} className="flex justify-end">
-                    <div className="bg-[#1e1a8a] text-white text-xs rounded-xl rounded-tr-sm px-3 py-2 max-w-[80%]">
+                    <div className="bg-primary text-on-primary text-xs rounded-xl rounded-tr-sm px-3 py-2 max-w-[80%]">
                       <p>{m.text}</p>
-                      <p className="text-white/60 text-[9px] mt-1">{m.time}</p>
+                      <p className="text-on-primary/60 text-[9px] mt-1">{m.time}</p>
                     </div>
                   </div>
                 ))}
@@ -381,7 +381,7 @@ export function EmployeeRoster() {
                 />
                 <button
                   onClick={handleSendMessage}
-                  className="w-9 h-9 rounded-lg bg-[#1e1a8a] text-white flex items-center justify-center hover:bg-[#1e1a8a]/90 active-press shadow-3d-btn-primary"
+                  className="w-9 h-9 rounded-lg bg-primary text-on-primary flex items-center justify-center hover:bg-primary/90 active-press shadow-3d-btn-primary"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -398,7 +398,7 @@ export function EmployeeRoster() {
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-variant/30 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-[#1e1a8a]" />
+                  <Calendar className="w-4 h-4 text-primary" />
                   <span className="text-sm font-bold text-on-surface">Weekly Availability</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -425,7 +425,7 @@ export function EmployeeRoster() {
                   </div>
                   <button
                     onClick={handleSaveAvailability}
-                    className="w-full mt-4 py-2 rounded-xl bg-[#1e1a8a] text-white text-sm font-bold hover:bg-[#1e1a8a]/90 active-press shadow-3d-btn-primary"
+                    className="w-full mt-4 py-2 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary/90 active-press shadow-3d-btn-primary"
                   >
                     <Check className="w-3.5 h-3.5 inline mr-1" />Save Availability
                   </button>
@@ -503,7 +503,7 @@ export function EmployeeRoster() {
                     {[
                       { label: 'Reliability', value: `${Math.round((selectedEmp.reliabilityScore || 0.95) * 100)}%`, icon: Star, color: 'text-amber-500', bg: 'bg-amber-50' },
                       { label: 'Fairness', value: `${selectedEmp.fairnessScore || 94}%`, icon: Shield, color: 'text-success', bg: 'bg-green-50' },
-                      { label: 'Max hrs/wk', value: `${selectedEmp.maxHoursPerWeek}h`, icon: Clock, color: 'text-[#1e1a8a]', bg: 'bg-[#1e1a8a]/5' },
+                      { label: 'Max hrs/wk', value: `${selectedEmp.maxHoursPerWeek}h`, icon: Clock, color: 'text-primary', bg: 'bg-primary/5' },
                       { label: 'Hourly Rate', value: `₹${selectedEmp.baseHourlyRate}/h`, icon: BarChart2, color: 'text-[#0d9488]', bg: 'bg-teal-50' },
                     ].map(m => (
                       <div key={m.label} className={`flex items-center gap-3 p-3 rounded-xl ${m.bg} border border-white shadow-sm`}>

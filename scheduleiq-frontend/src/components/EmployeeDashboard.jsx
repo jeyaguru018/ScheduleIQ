@@ -184,7 +184,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
     switch (role) {
       case 'CASHIER': return 'text-[#0d9488] bg-[#14b8a6]/10';
       case 'STOCKER': return 'text-[#7c3aed] bg-[#8b5cf6]/10';
-      case 'LEAD_CASHIER': return 'text-[#1e1a8a] bg-[#1e1a8a]/10';
+      case 'LEAD_CASHIER': return 'text-primary bg-primary/10';
       case 'DELIVERY_BOY': return 'text-[#d97706] bg-[#f59e0b]/10';
       default: return 'text-outline bg-surface-variant';
     }
@@ -262,13 +262,13 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto pb-24 scrollbar-hide bg-[#fafbfc]">
+        <div className="flex-1 overflow-y-auto pb-24 scrollbar-hide bg-surface-variant">
           <div className="px-5 py-5 space-y-5">
 
             {/* Next Shift Hero Card */}
             {loading ? (
               <div className="bg-surface rounded-2xl p-6 shadow-sm border border-outline-variant/30 text-center">
-                <div className="w-8 h-8 border-4 border-[#1e1a8a]/30 border-t-[#1e1a8a] rounded-full animate-spin mx-auto mb-3" />
+                <div className="w-8 h-8 border-4 border-primary/30 border-t-[#1e1a8a] rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-sm font-semibold text-on-surface-variant">Loading your schedule...</p>
               </div>
             ) : nextShift ? (
@@ -329,7 +329,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                 <p className="text-xs text-on-surface-variant mt-1">Your manager hasn't published a schedule yet. Tap Sync to refresh.</p>
                 <button
                   onClick={() => fetchMyShifts(true)}
-                  className="mt-3 text-xs font-bold text-[#1e1a8a] hover:underline flex items-center gap-1 mx-auto"
+                  className="mt-3 text-xs font-bold text-primary hover:underline flex items-center gap-1 mx-auto"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />Sync now
                 </button>
@@ -340,7 +340,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
             {!loading && upcomingShifts.length > 0 && (
               <div>
                 <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <CalendarDays className="w-4 h-4 text-[#1e1a8a]" />My Schedule
+                  <CalendarDays className="w-4 h-4 text-primary" />My Schedule
                 </h3>
                 <div className="space-y-2">
                   {upcomingShifts.map(s => {
@@ -355,11 +355,11 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-[#1e1a8a]/5 flex flex-col items-center justify-center shrink-0">
-                            <span className="text-[9px] font-bold text-[#1e1a8a] uppercase">
+                          <div className="w-10 h-10 rounded-xl bg-primary/5 flex flex-col items-center justify-center shrink-0">
+                            <span className="text-[9px] font-bold text-primary uppercase">
                               {new Date(s.startTime).toLocaleDateString('en-US', { month: 'short' })}
                             </span>
-                            <span className="text-base font-extrabold text-[#1e1a8a] leading-none">
+                            <span className="text-base font-extrabold text-primary leading-none">
                               {new Date(s.startTime).getDate()}
                             </span>
                           </div>
@@ -381,7 +381,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                             <span className="text-[9px] font-bold text-on-warning bg-warning-container px-2 py-1 rounded border border-warning uppercase">Swap Pending</span>
                           ) : (
                             <button
-                              className="text-xs font-bold text-[#1e1a8a] border border-[#1e1a8a]/20 px-2.5 py-1.5 rounded-lg hover:bg-[#1e1a8a]/5 transition-colors"
+                              className="text-xs font-bold text-primary border border-primary/20 px-2.5 py-1.5 rounded-lg hover:bg-primary/5 transition-colors"
                               onClick={() => handleRequestSwap(s.id)}
                             >
                               Swap
@@ -399,11 +399,11 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-[#1e1a8a]" />Leave Requests
+                  <FileText className="w-4 h-4 text-primary" />Leave Requests
                 </h3>
                 <button
                   onClick={() => setIsLeaveModalOpen(true)}
-                  className="text-xs font-bold text-[#1e1a8a] hover:underline flex items-center gap-1"
+                  className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
                 >
                   + Request Leave
                 </button>
@@ -453,10 +453,10 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
         {/* Bottom Navigation */}
         <div className="absolute bottom-0 left-0 right-0 bg-surface/90 backdrop-blur-md border-t border-outline-variant/30 flex justify-around items-center px-4 py-3 pb-safe z-20">
           <button className="flex flex-col items-center gap-1 group">
-            <div className="w-10 h-7 rounded-full bg-[#1e1a8a]/10 flex items-center justify-center group-hover:bg-[#1e1a8a]/20 transition-colors">
-              <Home className="w-4 h-4 text-[#1e1a8a]" />
+            <div className="w-10 h-7 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <Home className="w-4 h-4 text-primary" />
             </div>
-            <span className="text-[9px] font-bold text-[#1e1a8a] uppercase tracking-wider">Home</span>
+            <span className="text-[9px] font-bold text-primary uppercase tracking-wider">Home</span>
           </button>
 
           <button
@@ -465,7 +465,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
             disabled={syncing}
           >
             <div className="w-10 h-7 rounded-full bg-surface-variant flex items-center justify-center group-hover:bg-surface-variant/70 transition-colors">
-              <RefreshCw className={`w-4 h-4 text-outline ${syncing ? 'animate-spin text-[#1e1a8a]' : ''}`} />
+              <RefreshCw className={`w-4 h-4 text-outline ${syncing ? 'animate-spin text-primary' : ''}`} />
             </div>
             <span className="text-[9px] font-bold text-outline uppercase tracking-wider">{syncing ? 'Syncing' : 'Sync'}</span>
           </button>
@@ -510,7 +510,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
             <div>
               <label className="block text-sm font-bold text-on-surface mb-1.5">Reason for Leave</label>
               <textarea
-                className="w-full border border-outline-variant rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-[#1e1a8a]/30 focus:border-[#1e1a8a] shadow-sm text-sm resize-none transition-all"
+                className="w-full border border-outline-variant rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-[#1e1a8a]/30 focus:border-primary shadow-sm text-sm resize-none transition-all"
                 value={leaveReason}
                 onChange={e => setLeaveReason(e.target.value)}
                 placeholder="e.g. Medical appointment, family occasion"
@@ -520,7 +520,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" type="button" onClick={() => setIsLeaveModalOpen(false)}>Cancel</Button>
-              <Button variant="primary" type="submit" className="bg-[#1e1a8a] text-white" isLoading={submittingLeave}>
+              <Button variant="primary" type="submit" className="bg-primary text-on-primary" isLoading={submittingLeave}>
                 Submit Request
               </Button>
             </div>

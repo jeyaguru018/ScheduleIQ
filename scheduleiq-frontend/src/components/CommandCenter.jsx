@@ -175,7 +175,7 @@ export function CommandCenter() {
     switch (role) {
       case 'CASHIER': return 'bg-[#14b8a6]/20 text-[#0d9488] border-[#14b8a6]/30';
       case 'STOCKER': return 'bg-[#8b5cf6]/20 text-[#7c3aed] border-[#8b5cf6]/30';
-      case 'LEAD_CASHIER': return 'bg-[#1e1a8a]/10 text-[#1e1a8a] border-[#1e1a8a]/20';
+      case 'LEAD_CASHIER': return 'bg-primary/10 text-primary border-primary/20';
       case 'DELIVERY_BOY': return 'bg-[#f59e0b]/20 text-on-warning border-[#f59e0b]/30';
       default: return 'bg-surface-variant text-outline border-outline-variant';
     }
@@ -185,7 +185,7 @@ export function CommandCenter() {
     if (clockStatus === 'CLOCKED_IN') return 'bg-[#14b8a6] border-[#0d9488]';
     if (clockStatus === 'CLOCKED_OUT') return 'bg-surface-variant border-outline-variant';
     switch (role) {
-      case 'CASHIER': return 'bg-[#1e1a8a] border-[#1e1a8a]/80';
+      case 'CASHIER': return 'bg-primary border-primary/80';
       case 'STOCKER': return 'bg-[#7c3aed] border-[#7c3aed]/80';
       case 'LEAD_CASHIER': return 'bg-[#0d9488] border-[#0d9488]/80';
       case 'DELIVERY_BOY': return 'bg-[#d97706] border-[#d97706]/80';
@@ -203,7 +203,7 @@ export function CommandCenter() {
     return (
       <div className="flex-1 flex items-center justify-center bg-surface-variant">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#1e1a8a]/20 border-t-[#1e1a8a] rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-primary/20 border-t-[#1e1a8a] rounded-full animate-spin" />
           <p className="text-sm font-semibold text-on-surface-variant">Loading Command Center...</p>
         </div>
       </div>
@@ -224,7 +224,7 @@ export function CommandCenter() {
           </div>
           <button
             onClick={() => fetchData(true)}
-            className="flex items-center gap-2 text-sm font-bold text-[#1e1a8a] bg-surface border border-outline-variant px-4 py-2 rounded-xl hover:shadow-md transition-all"
+            className="flex items-center gap-2 text-sm font-bold text-primary bg-surface border border-outline-variant px-4 py-2 rounded-xl hover:shadow-md transition-all"
             disabled={refreshing}
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -292,7 +292,7 @@ export function CommandCenter() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#1e1a8a]" />
+                  <Clock className="w-4 h-4 text-primary" />
                   Shift Timeline
                   {selectedDay === 0 && <span className="w-2 h-2 rounded-full bg-success animate-pulse ml-1" />}
                 </CardTitle>
@@ -314,15 +314,15 @@ export function CommandCenter() {
                     onClick={() => setSelectedDay(idx)}
                     className={`flex flex-col items-center px-3 py-2 rounded-xl border transition-all shrink-0 ${
                       isActive
-                        ? 'bg-[#1e1a8a] border-[#1e1a8a] text-white shadow-md'
-                        : 'bg-surface border-outline-variant text-on-surface hover:border-[#1e1a8a]/30 hover:bg-[#1e1a8a]/5'
+                        ? 'bg-primary border-primary text-on-primary shadow-md'
+                        : 'bg-surface border-outline-variant text-on-surface hover:border-primary/30 hover:bg-primary/5'
                     }`}
                   >
-                    <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? 'text-white/70' : 'text-outline'}`}>{day.label}</span>
-                    <span className={`text-base font-extrabold leading-tight ${isActive ? 'text-white' : 'text-on-surface'}`}>{day.date}</span>
+                    <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? 'text-on-primary/70' : 'text-outline'}`}>{day.label}</span>
+                    <span className={`text-base font-extrabold leading-tight ${isActive ? 'text-on-primary' : 'text-on-surface'}`}>{day.date}</span>
                     {dayShifts.length > 0 && (
                       <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full mt-0.5 ${
-                        isActive ? 'bg-surface/20 text-white' : 'bg-[#14b8a6]/10 text-[#0d9488]'
+                        isActive ? 'bg-surface/20 text-on-primary' : 'bg-[#14b8a6]/10 text-[#0d9488]'
                       }`}>
                         {dayShifts.length}
                       </span>
@@ -414,7 +414,7 @@ export function CommandCenter() {
                 {/* Legend */}
                 <div className="flex gap-4 mt-4 pt-3 border-t border-outline-variant/30">
                   {[
-                    { color: 'bg-[#1e1a8a]', label: 'Cashier' },
+                    { color: 'bg-primary', label: 'Cashier' },
                     { color: 'bg-[#7c3aed]', label: 'Stocker' },
                     { color: 'bg-[#14b8a6]', label: 'Active (Clocked In)' },
                     { color: 'bg-surface-variant border border-outline-variant', label: 'Completed' }
@@ -502,7 +502,7 @@ export function CommandCenter() {
                         variant="outline"
                         size="sm"
                         onClick={(e) => { e.stopPropagation(); handleMessage(alert.name); }}
-                        className="border-outline-variant text-on-surface hover:text-[#1e1a8a] hover:border-[#1e1a8a]/30 font-bold shadow-sm bg-surface whitespace-nowrap"
+                        className="border-outline-variant text-on-surface hover:text-primary hover:border-primary/30 font-bold shadow-sm bg-surface whitespace-nowrap"
                       >
                         <MessageCircle className="w-3.5 h-3.5 mr-1.5" />Message
                       </Button>
@@ -549,7 +549,7 @@ export function CommandCenter() {
                           </div>
                           <div className="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full ${i === 0 ? 'bg-[#8b5cf6]' : i === 1 ? 'bg-[#1e1a8a]' : 'bg-[#14b8a6]'}`}
+                              className={`h-full rounded-full ${i === 0 ? 'bg-[#8b5cf6]' : i === 1 ? 'bg-primary' : 'bg-[#14b8a6]'}`}
                               style={{ width: `${pct}%` }}
                             />
                           </div>

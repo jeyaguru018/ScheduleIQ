@@ -182,12 +182,12 @@ export function DemandForecast() {
                 onChange={e => setSelectedDate(e.target.value)}
                 className="bg-surface border border-outline-variant rounded-lg p-2.5 pl-9 font-semibold text-sm outline-none shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 cursor-pointer text-on-surface"
               />
-              <CalendarDays className="w-4 h-4 text-[#1e1a8a] absolute left-3 pointer-events-none" />
+              <CalendarDays className="w-4 h-4 text-primary absolute left-3 pointer-events-none" />
             </div>
 
             <Button 
               variant="primary" 
-              className="bg-[#1e1a8a] hover:bg-[#1e1a8a]/90 text-white font-bold shadow-sm"
+              className="bg-primary hover:bg-primary/90 text-white font-bold shadow-sm"
               onClick={handleResolveGaps}
               isLoading={resolving}
             >
@@ -203,7 +203,7 @@ export function DemandForecast() {
             <h3 className="text-lg font-bold text-on-surface">Hourly Staffing vs Demand (6AM - 11PM) for {selectedDate}</h3>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2 text-sm font-bold text-on-surface">
-                <span className="w-3 h-3 rounded-full bg-[#1e1a8a]"></span> Predicted Demand
+                <span className="w-3 h-3 rounded-full bg-primary"></span> Predicted Demand
               </div>
               <div className="flex items-center gap-2 text-sm font-bold text-on-surface">
                 <span className="w-3 h-3 rounded-full bg-[#14b8a6]"></span> Current Staffing
@@ -284,9 +284,9 @@ export function DemandForecast() {
                 {d.isToday && <div className="text-[10px] font-bold text-primary mb-2 uppercase tracking-wider">[Today]</div>}
                 
                 <div className="h-16 w-full mt-4 flex items-end">
-                  <div className="w-full bg-[#1e1a8a]/10 rounded-t-sm relative h-full flex items-end">
+                  <div className="w-full bg-primary/10 rounded-t-sm relative h-full flex items-end">
                     <div 
-                      className={`w-full rounded-t-sm opacity-90 transition-all ${d.isToday ? 'bg-[#1e1a8a]' : 'bg-[#1e1a8a]/40'}`} 
+                      className={`w-full rounded-t-sm opacity-90 transition-all ${d.isToday ? 'bg-primary' : 'bg-primary/40'}`} 
                       style={{ height: `${(d.val / 80) * 100}%` }}
                     ></div>
                   </div>
