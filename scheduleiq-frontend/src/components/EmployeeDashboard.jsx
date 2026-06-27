@@ -166,7 +166,9 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
   };
 
   const formatTimeLabel = (timeStr) => {
+    if (!timeStr) return '--:--';
     const d = new Date(timeStr);
+    if (isNaN(d.getTime())) return '--:--';
     let hours = d.getHours();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
@@ -454,29 +456,35 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {marketplaceSwaps.slice(0, 4).map(swap => (
+                  {marketplaceSwaps.slice(0, 4).map(swap => {
+                    const shift = swap.requesterShift || swap.shift;
+                    const requester = swap.requester || swap.requestedBy;
+                    return (
                     <div key={swap.id} className="p-3.5 rounded-xl border border-outline-variant/60 bg-surface-variant/30 hover:bg-surface-variant/60 transition-colors">
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <p className="text-xs font-extrabold text-on-surface uppercase">
-                            {new Date(swap.shift?.startTime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                            {shift?.startTime && !isNaN(new Date(shift.startTime).getTime())
+                              ? new Date(shift.startTime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                              : 'Open Shift'}
                           </p>
                           <p className="text-xs font-bold text-on-surface-variant">
-                            {formatTimeLabel(swap.shift?.startTime)} – {formatTimeLabel(swap.shift?.endTime)}
+                            {formatTimeLabel(shift?.startTime)} – {formatTimeLabel(shift?.endTime)}
                           </p>
                         </div>
-                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase ${getRoleColor(swap.shift?.role)}`}>
-                          {swap.shift?.role?.replace('_', ' ')}
+                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase ${getRoleColor(shift?.role)}`}>
+                          {shift?.role ? shift.role.replace('_', ' ') : 'SHIFT'}
                         </span>
                       </div>
                       <p className="text-xs font-bold text-on-surface mb-2.5 flex items-center gap-1.5">
-                        <Avatar name={swap.requestedBy?.name || '?'} size="xs" /> {swap.requestedBy?.name || 'A teammate'} is offering this shift.
+                        <Avatar name={requester?.name || 'Teammate'} size="xs" /> {requester?.name || 'A teammate'} is offering this shift.
                       </p>
                       <Button variant="outline" className="w-full text-xs font-extrabold h-8 bg-surface hover:bg-primary/10 hover:text-primary transition-colors">
                         Pick up shift
                       </Button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
