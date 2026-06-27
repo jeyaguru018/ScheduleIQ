@@ -21,7 +21,9 @@ import {
   Clock,
   Star,
   ChevronRight,
-  Shield
+  Shield,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import * as api from '../api';
 import { useToast } from './common/Toast';
@@ -70,6 +72,7 @@ export function EmployeeRoster() {
   const [selectedEmp, setSelectedEmp] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Sidebar panel sub-views
   const [isMessageOpen, setIsMessageOpen] = useState(false);
@@ -119,9 +122,11 @@ export function EmployeeRoster() {
     try {
       await api.createEmployee(formData);
       setIsAddModalOpen(false);
-      setFormData({ name: '', email: '', password: '', role: 'CASHIER', baseHourlyRate: '', maxHoursPerWeek: 40 });
       showToast("Employee added successfully!");
-      loadData();
+      // Optimistic UI update since cache might take a moment to invalidate on errors
+      setEmployees(prev => [...prev, { id: Date.now(), ...formData, fairnessScore: 100 }]);
+      setFormData({ name: '', email: '', password: '', role: 'CASHIER', baseHourlyRate: '', maxHoursPerWeek: 40 });
+      setTimeout(loadData, 1000);
     } catch (e) { showToast(e.message, 'error'); }
   };
 
@@ -130,9 +135,11 @@ export function EmployeeRoster() {
     try {
       await api.updateEmployee(selectedEmp.id, formData);
       setIsEditModalOpen(false);
-      setSelectedEmp(null);
       showToast("Employee updated successfully!");
-      loadData();
+      // Optimistic update
+      setEmployees(prev => prev.map(emp => emp.id === selectedEmp.id ? { ...emp, ...formData } : emp));
+      setSelectedEmp(null);
+      setTimeout(loadData, 1000);
     } catch (e) { showToast(e.message, 'error'); }
   };
 
@@ -204,7 +211,7 @@ export function EmployeeRoster() {
       <div className="flex-1 overflow-y-auto p-8 min-w-0">
         <Card className="shadow-3d-card border-outline-variant/30 rounded-2xl overflow-hidden">
           {/* Header */}
-          <CardHeader className="px-6 py-5 border-b border-outline-variant bg-gradient-to-r from-white to-surface-variant/20">
+          <CardHeader className="px-6 py-5 border-b border-outline-variant bg-surface">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary/8 flex items-center justify-center shadow-3d-btn">
@@ -298,7 +305,7 @@ export function EmployeeRoster() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-outline hover:text-primary shadow-3d-btn active-press"
+                            className="text-on-surface hover:text-primary shadow-3d-btn active-press"
                             onClick={(e) => { e.stopPropagation(); openEdit(emp); }}
                           >
                             <Pencil className="w-4 h-4" />
@@ -566,10 +573,18 @@ export function EmployeeRoster() {
         <form onSubmit={handleAddSubmit} className="flex flex-col gap-4">
           <Input label="Full Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
           <Input label="Email" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
-          <Input label="Temporary Password" type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} required />
+          <Input 
+            label="Temporary Password" 
+            type={showPassword ? "text" : "password"} 
+            value={formData.password} 
+            onChange={e => setFormData({...formData, password: e.target.value})} 
+            endIcon={showPassword ? EyeOff : Eye}
+            onEndIconClick={() => setShowPassword(!showPassword)}
+            required 
+          />
           <div>
             <label className="block text-label-md font-bold text-on-surface mb-1.5">Role</label>
-            <select className="flex h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shadow-sm" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
+            <select className="flex h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shadow-sm" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
               <option value="CASHIER">Cashier</option>
               <option value="LEAD_CASHIER">Lead Cashier</option>
               <option value="STOCKER">Stocker</option>
@@ -594,7 +609,7 @@ export function EmployeeRoster() {
           <Input label="Email" type="email" value={formData.email} disabled />
           <div>
             <label className="block text-label-md font-bold text-on-surface mb-1.5">Role</label>
-            <select className="flex h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shadow-sm" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
+            <select className="flex h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shadow-sm" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
               <option value="CASHIER">Cashier</option>
               <option value="LEAD_CASHIER">Lead Cashier</option>
               <option value="STOCKER">Stocker</option>

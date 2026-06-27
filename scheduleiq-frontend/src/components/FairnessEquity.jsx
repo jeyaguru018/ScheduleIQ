@@ -56,6 +56,15 @@ export function FairnessEquity() {
 
   const avgScore = employeeIndex.length ? Math.round(employeeIndex.reduce((acc, e) => acc + e.score, 0) / employeeIndex.length) : 0;
   const criticalEmp = employeeIndex.find(e => e.isWarning);
+  const getWeekRange = () => {
+    const today = new Date();
+    const first = today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1); // Monday
+    const last = first + 6;
+    const firstDay = new Date(today.setDate(first));
+    const lastDay = new Date(today.setDate(last));
+    const month = firstDay.toLocaleString('en-US', { month: 'short' });
+    return `This Week (${month} ${firstDay.getDate()} - ${lastDay.getDate()})`;
+  };
 
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-surface-variant">
@@ -67,7 +76,7 @@ export function FairnessEquity() {
             <p className="text-on-surface-variant mt-1">Real-time analysis of shift distribution and workload balance.</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm font-bold text-on-surface mr-2">This Week (Oct 15 - 21)</span>
+            <span className="text-sm font-bold text-on-surface mr-2">{getWeekRange()}</span>
             <Button variant="outline" className="bg-surface font-bold shadow-sm">
               <Download className="w-4 h-4 mr-2" />
               Export

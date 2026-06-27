@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 import { cn } from '../../lib/utils';
 
-export const Input = forwardRef(({ className, label, error, icon: Icon, iconClassName, id, ...props }, ref) => {
+export const Input = forwardRef(({ className, label, error, icon: Icon, iconClassName, endIcon: EndIcon, onEndIconClick, id, ...props }, ref) => {
   return (
     <div className="w-full">
       {label && (
@@ -21,11 +21,17 @@ export const Input = forwardRef(({ className, label, error, icon: Icon, iconClas
           className={cn(
             "flex h-11 w-full rounded-md border border-on-surface/50 bg-surface px-3 py-2 text-body-md text-on-surface font-semibold ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-on-surface-variant focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 transition-colors shadow-sm",
             Icon && "pl-10",
+            EndIcon && "pr-10",
             error && "border-error focus-visible:ring-error focus-visible:border-error",
             className
           )}
           {...props}
         />
+        {EndIcon && (
+          <button type="button" onClick={onEndIconClick} className="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <EndIcon className="h-5 w-5 text-outline hover:text-on-surface transition-colors" />
+          </button>
+        )}
       </div>
       {error && (
         <p className="mt-1.5 text-label-sm text-error font-medium">{error}</p>
