@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Avatar } from './common/Avatar';
 import { 
-  Bell, 
   CalendarDays, 
   MapPin, 
   Briefcase, 
-  ArrowRightLeft, 
-  Home, 
-  User as UserIcon,
+  ArrowLeftRight, 
   LogOut,
   Clock,
   CheckCircle2,
@@ -15,11 +12,9 @@ import {
   FileText,
   XCircle,
   RefreshCw,
-  ChevronRight,
-  Zap,
-  Wifi
+  DollarSign,
+  AlertTriangle
 } from 'lucide-react';
-import { SparklesIcon } from './AiGenerator';
 import { useToast } from './common/Toast';
 import { Button } from './common/Button';
 import { Modal } from './common/Modal';
@@ -32,7 +27,6 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [liveConnected, setLiveConnected] = useState(false);
   
   // Leave state
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
@@ -41,14 +35,14 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
   const [submittingLeave, setSubmittingLeave] = useState(false);
   const [myLeaves, setMyLeaves] = useState([]);
 
-  // ── v2.0: Real-time WebSocket — auto-refresh when manager publishes schedule ──
-  useScheduleUpdates(useCallback((payload) => {
-    setLiveConnected(true);
-    showToast(`📅 New schedule published by your manager! Refreshing your shifts...`, 'info');
+  // Swaps state
+  const [marketplaceSwaps, setMarketplaceSwaps] = useState([]);
+
+  useScheduleUpdates(useCallback(() => {
+    showToast('📅 New schedule published by your manager! Refreshing your shifts...', 'info');
     fetchMyShifts();
   }, []), true);
 
-  // ── v2.0: Real-time WebSocket — auto-update leave status when approved/rejected ──
   useLeaveUpdates(useCallback((payload) => {
     const msg = payload.status === 'APPROVED'
       ? '✅ Your leave request was approved!'
@@ -60,6 +54,7 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
   useEffect(() => {
     fetchMyShifts();
     fetchMyLeaves();
+    fetchMarketplaceSwaps();
   }, []);
 
   const fetchMyShifts = useCallback(async (showSyncIndicator = false) => {
@@ -67,12 +62,9 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
     else setLoading(true);
 
     try {
-      // Show upcoming shifts: 3 days back and 14 days forward
-      // This ensures just-published schedules for next week are visible
       const now = new Date();
       const startDate = new Date(now);
       startDate.setDate(now.getDate() - 3);
-
       const endDate = new Date(now);
       endDate.setDate(now.getDate() + 14);
 
@@ -80,9 +72,6 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
       const endStr = endDate.toISOString().split('T')[0] + 'T23:59:59';
 
       const myShifts = await api.getShifts(startStr, endStr) || [];
-
-      // Backend already scopes to this employee's shifts
-      // Sort by start time ascending
       myShifts.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
       setShifts(myShifts);
 
@@ -104,6 +93,17 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
       setMyLeaves(data || []);
     } catch (e) {
       console.warn('Failed to load my leaves:', e.message);
+    }
+  };
+
+  const fetchMarketplaceSwaps = async () => {
+    try {
+      // Mock data for UI demonstration purposes as the swap API might need scope for the specific employee
+      // But we use the actual API if it exists:
+      const data = await api.getSwaps();
+      setMarketplaceSwaps(data.filter(s => s.status === 'PENDING') || []);
+    } catch (e) {
+      console.warn('Failed to load marketplace swaps:', e.message);
     }
   };
 
@@ -182,261 +182,321 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
 
   const getRoleColor = (role) => {
     switch (role) {
-      case 'CASHIER': return 'text-[#0d9488] bg-[#14b8a6]/10';
-      case 'STOCKER': return 'text-[#7c3aed] bg-[#8b5cf6]/10';
-      case 'LEAD_CASHIER': return 'text-primary bg-primary/10';
-      case 'DELIVERY_BOY': return 'text-[#d97706] bg-[#f59e0b]/10';
-      default: return 'text-outline bg-surface-variant';
+      case 'CASHIER': return 'text-[#0d9488] bg-[#14b8a6]/10 border border-[#14b8a6]/30';
+      case 'STOCKER': return 'text-[#7c3aed] bg-[#8b5cf6]/10 border border-[#8b5cf6]/30';
+      case 'LEAD_CASHIER': return 'text-primary bg-primary/10 border border-primary/30';
+      case 'DELIVERY_BOY': return 'text-[#d97706] bg-[#f59e0b]/10 border border-[#f59e0b]/30';
+      default: return 'text-outline bg-surface-variant border border-outline-variant/30';
     }
   };
 
-  // Next shift = first shift that is not fully clocked out and is in the future (or active)
   const now = new Date();
   const nextShift = shifts.find(s => {
     const end = new Date(s.endTime);
     return s.clockStatus !== 'CLOCKED_OUT' && end >= now;
   });
 
-  // Upcoming shifts (excluding nextShift)
-  const upcomingShifts = shifts.filter(s => s.id !== nextShift?.id);
+  const upcomingShifts = shifts.filter(s => s.id !== nextShift?.id && new Date(s.endTime) >= now);
 
-  // Today's stats
-  const todayShifts = shifts.filter(s => {
-    const d = new Date(s.startTime);
-    return d.toDateString() === now.toDateString();
-  });
+  const scheduledHours = shifts.filter(s => new Date(s.startTime).getTime() >= (now.getTime() - now.getDay() * 86400000)).reduce((acc, s) => {
+    return acc + (new Date(s.endTime) - new Date(s.startTime)) / (1000 * 60 * 60);
+  }, 0);
+  const maxHours = user?.maxHoursPerWeek || 40;
+  const earnings = scheduledHours * (user?.baseHourlyRate || 250);
 
   return (
-    <div className="flex-1 bg-gradient-to-br from-[#f0f4ff] to-[#fafbfc] flex justify-center items-center h-full overflow-hidden">
-      <div className="w-full max-w-[420px] h-full bg-surface shadow-2xl relative flex flex-col overflow-hidden sm:rounded-3xl sm:h-[900px] border border-outline-variant/30">
-
-        {/* Gradient Header */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#1e1a8a] to-[#312e9e] px-6 pt-10 pb-8 shrink-0">
-          <div className="absolute -right-8 -top-8 w-40 h-40 bg-surface/5 rounded-full blur-2xl" />
-          <div className="absolute -left-4 bottom-0 w-28 h-28 bg-surface/5 rounded-full blur-xl" />
-          
-          <div className="relative flex justify-between items-start mb-6">
-            <div>
-              <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-1">
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-              </p>
-              <h1 className="text-2xl font-bold text-white">
-                Hello, {user?.name?.split(' ')[0] || 'Team'} 👋
-              </h1>
-              <p className="text-white/60 text-sm mt-0.5">{user?.role?.replace('_', ' ')}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                className="w-9 h-9 rounded-full bg-surface/10 flex items-center justify-center text-white/80 hover:bg-surface/20 transition-all border border-white/10"
-                onClick={() => setIsLeaveModalOpen(true)}
-                title="Request Leave"
-              >
-                <CalendarRange className="w-4 h-4" />
-              </button>
-              <button onClick={onOpenProfile}>
-                <Avatar name={user?.name || 'User'} size="md" className="border-2 border-white/40 shadow-lg" />
-              </button>
-            </div>
-          </div>
-
-          {/* Quick Stats Row */}
-          <div className="flex gap-3 relative">
-            <div className="flex-1 bg-surface/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
-              <div className="text-2xl font-bold text-white">{shifts.length}</div>
-              <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wider mt-0.5">Upcoming Shifts</div>
-            </div>
-            <div className="flex-1 bg-surface/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
-              <div className="text-2xl font-bold text-white">
-                {shifts.reduce((acc, s) => {
-                  const h = (new Date(s.endTime) - new Date(s.startTime)) / (1000 * 60 * 60);
-                  return acc + h;
-                }, 0).toFixed(0)}h
-              </div>
-              <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wider mt-0.5">Hours Scheduled</div>
-            </div>
-            <div className="flex-1 bg-surface/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
-              <div className="text-2xl font-bold text-white">{myLeaves.filter(l => l.status === 'PENDING').length}</div>
-              <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wider mt-0.5">Pending Leave</div>
-            </div>
-          </div>
+    <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-surface-variant transition-colors duration-200">
+      {/* Header section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-on-surface tracking-tight">
+            Hello, {user?.name?.split(' ')[0] || 'Team'} 👋
+          </h1>
+          <p className="text-sm font-semibold text-on-surface-variant mt-1 uppercase tracking-widest">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} • {user?.role?.replace('_', ' ')}
+          </p>
         </div>
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline"
+            className="bg-surface border-outline-variant text-[#0d9488] hover:bg-[#14b8a6]/10 font-bold transition-all"
+            onClick={() => fetchMyShifts(true)}
+            disabled={syncing}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Syncing...' : 'Sync'}
+          </Button>
+          <Button 
+            className="bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold border-transparent shadow-sm transition-all"
+            onClick={() => setIsLeaveModalOpen(true)}
+          >
+            <CalendarRange className="w-4 h-4 mr-2" />
+            Request Leave
+          </Button>
+        </div>
+      </div>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto pb-24 scrollbar-hide bg-surface-variant">
-          <div className="px-5 py-5 space-y-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Main Column */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* Earnings & Hours Tracker (Feature 1) */}
+          <div className="bg-surface rounded-2xl p-6 shadow-sm border border-outline-variant/40 flex flex-col sm:flex-row gap-6 items-center transition-colors">
+             <div className="w-16 h-16 shrink-0 rounded-2xl bg-gradient-to-br from-[#1e1a8a] to-[#312e9e] flex items-center justify-center text-white shadow-md">
+               <DollarSign className="w-8 h-8" />
+             </div>
+             <div className="flex-1 w-full">
+               <div className="flex justify-between items-end mb-3">
+                 <div>
+                   <p className="text-xs font-bold text-outline uppercase tracking-wider">Weekly Earnings Est.</p>
+                   <h2 className="text-2xl font-extrabold text-on-surface">₹{earnings.toLocaleString('en-IN')}</h2>
+                 </div>
+                 <div className="text-right">
+                   <p className="text-xs font-bold text-outline uppercase tracking-wider">Hours Scheduled</p>
+                   <p className="text-lg font-bold text-on-surface">
+                     <span className={scheduledHours > maxHours ? 'text-error' : ''}>{scheduledHours.toFixed(1)}</span> / {maxHours} hrs
+                   </p>
+                 </div>
+               </div>
+               <div className="w-full h-2 bg-surface-variant rounded-full overflow-hidden">
+                 <div 
+                   className={`h-full rounded-full transition-all duration-500 ${scheduledHours > maxHours * 0.9 ? 'bg-[#f59e0b]' : 'bg-[#14b8a6]'}`} 
+                   style={{ width: `${Math.min((scheduledHours / maxHours) * 100, 100)}%` }} 
+                 />
+               </div>
+             </div>
+          </div>
 
-            {/* Next Shift Hero Card */}
-            {loading ? (
-              <div className="bg-surface rounded-2xl p-6 shadow-sm border border-outline-variant/30 text-center">
-                <div className="w-8 h-8 border-4 border-primary/30 border-t-[#1e1a8a] rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-sm font-semibold text-on-surface-variant">Loading your schedule...</p>
-              </div>
-            ) : nextShift ? (
-              <div className="relative overflow-hidden rounded-2xl shadow-lg">
-                {/* Background gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#14b8a6] to-[#0d9488]" />
-                <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-surface/10 rounded-full blur-xl" />
-                <div className="absolute -left-2 -top-2 w-20 h-20 bg-surface/5 rounded-full" />
+          {/* Next Shift Hero */}
+          {loading ? (
+            <div className="bg-surface rounded-2xl p-10 shadow-sm border border-outline-variant/30 text-center flex flex-col items-center justify-center">
+              <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4" />
+              <p className="text-sm font-semibold text-on-surface-variant">Loading your schedule...</p>
+            </div>
+          ) : nextShift ? (
+            <div className="relative overflow-hidden rounded-2xl shadow-md border border-outline-variant/20">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#14b8a6] to-[#0d9488]" />
+              <div className="absolute -right-6 -bottom-6 w-40 h-40 bg-surface/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute -left-2 -top-2 w-20 h-20 bg-surface/5 rounded-full pointer-events-none" />
 
-                <div className="relative p-6 text-white">
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="bg-surface/20 border border-white/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm">
+              <div className="relative p-6 sm:p-8 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="bg-surface/20 border border-white/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm shadow-sm">
                       {nextShift.clockStatus === 'CLOCKED_IN' ? '🟢 Active Shift' : '⏰ Next Shift'}
                     </span>
-                    <span className="text-white/70 text-xs font-semibold">
+                    <span className="text-white/70 text-xs font-semibold bg-black/10 px-2 py-0.5 rounded">
                       {getShiftDuration(nextShift.startTime, nextShift.endTime)}
                     </span>
                   </div>
 
-                  <div className="mb-5">
-                    <p className="text-white/70 text-xs font-bold uppercase tracking-wider mb-1">
-                      {formatShiftDateLabel(nextShift.startTime)}
-                    </p>
-                    <h2 className="text-3xl font-extrabold tracking-tight leading-none">
+                  <p className="text-white/70 text-xs font-bold uppercase tracking-wider mb-1">
+                    {formatShiftDateLabel(nextShift.startTime)}
+                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="text-4xl font-extrabold tracking-tight leading-none">
                       {formatTimeLabel(nextShift.startTime)}
                     </h2>
-                    <p className="text-white/80 text-base font-semibold mt-0.5">
+                    <span className="text-white/80 text-xl font-bold">
                       – {formatTimeLabel(nextShift.endTime)}
-                    </p>
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-4 mb-5 text-sm font-semibold text-white/80">
-                    <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-white/60" />Adyar Store</span>
-                    <span className="flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5 text-white/60" />{nextShift.role?.replace('_', ' ')}</span>
+                  <div className="flex items-center gap-4 mt-5 text-sm font-semibold text-white/90">
+                    <span className="flex items-center gap-1.5 bg-black/10 px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                      <MapPin className="w-4 h-4 text-white/70" /> Adyar Store
+                    </span>
+                    <span className="flex items-center gap-1.5 bg-black/10 px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                      <Briefcase className="w-4 h-4 text-white/70" /> {nextShift.role?.replace('_', ' ')}
+                    </span>
                   </div>
+                </div>
 
+                <div className="w-full sm:w-auto shrink-0">
                   {nextShift.clockStatus !== 'CLOCKED_IN' ? (
                     <Button
-                      className="w-full bg-surface text-[#0d9488] hover:bg-surface/90 font-bold py-3 shadow-md"
+                      className="w-full sm:w-40 bg-surface text-[#0d9488] hover:bg-surface/90 font-bold py-4 text-base shadow-lg transition-transform hover:-translate-y-0.5"
                       onClick={() => handleClockIn(nextShift.id)}
                     >
-                      <Clock className="w-4 h-4 mr-2" />Clock In
+                      <Clock className="w-5 h-5 mr-2" /> Clock In
                     </Button>
                   ) : (
                     <Button
-                      className="w-full bg-[#ef4444] hover:bg-[#dc2626] text-white font-bold py-3 shadow-md border-transparent"
+                      className="w-full sm:w-40 bg-[#ef4444] hover:bg-[#dc2626] text-white font-bold py-4 text-base shadow-lg border-transparent transition-transform hover:-translate-y-0.5"
                       onClick={() => handleClockOut(nextShift.id)}
                     >
-                      <Clock className="w-4 h-4 mr-2" />Clock Out
+                      <Clock className="w-5 h-5 mr-2" /> Clock Out
                     </Button>
                   )}
                 </div>
               </div>
-            ) : (
-              <div className="bg-surface rounded-2xl p-6 text-center border border-outline-variant/30 shadow-sm">
-                <CalendarDays className="w-10 h-10 text-outline-variant mx-auto mb-2" />
-                <p className="font-bold text-on-surface text-sm">No upcoming shifts found</p>
-                <p className="text-xs text-on-surface-variant mt-1">Your manager hasn't published a schedule yet. Tap Sync to refresh.</p>
-                <button
-                  onClick={() => fetchMyShifts(true)}
-                  className="mt-3 text-xs font-bold text-primary hover:underline flex items-center gap-1 mx-auto"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />Sync now
-                </button>
+            </div>
+          ) : (
+            <div className="bg-surface rounded-2xl p-10 text-center border border-outline-variant/40 shadow-sm flex flex-col items-center justify-center">
+              <div className="w-16 h-16 bg-surface-variant rounded-full flex items-center justify-center mb-4">
+                <CalendarDays className="w-8 h-8 text-outline" />
               </div>
-            )}
+              <p className="font-bold text-on-surface text-lg mb-1">No upcoming shifts</p>
+              <p className="text-sm text-on-surface-variant max-w-sm mx-auto mb-5">You are not scheduled for any upcoming shifts. Check back later or sync to refresh.</p>
+              <Button onClick={() => fetchMyShifts(true)} variant="outline" className="font-bold">
+                Refresh Schedule
+              </Button>
+            </div>
+          )}
 
-            {/* Upcoming Roster */}
-            {!loading && upcomingShifts.length > 0 && (
-              <div>
-                <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <CalendarDays className="w-4 h-4 text-primary" />My Schedule
+          {/* Upcoming Schedule List */}
+          {!loading && upcomingShifts.length > 0 && (
+            <div className="bg-surface rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-outline-variant/30 flex justify-between items-center bg-surface-variant/20">
+                <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4 text-primary" /> My Upcoming Schedule
                 </h3>
-                <div className="space-y-2">
-                  {upcomingShifts.map(s => {
-                    const isClockedOut = s.clockStatus === 'CLOCKED_OUT';
-                    return (
-                      <div
-                        key={s.id}
-                        className={`flex items-center justify-between p-4 rounded-xl border shadow-sm bg-surface transition-all ${
-                          isClockedOut ? 'opacity-50 border-outline-variant/30' :
-                          s.status === 'WAITING_SWAP' ? 'border-l-4 border-l-[#f59e0b] border-outline-variant/50' :
-                          'border-outline-variant/40 hover:shadow-md hover:-translate-y-0.5'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-primary/5 flex flex-col items-center justify-center shrink-0">
-                            <span className="text-[9px] font-bold text-primary uppercase">
-                              {new Date(s.startTime).toLocaleDateString('en-US', { month: 'short' })}
-                            </span>
-                            <span className="text-base font-extrabold text-primary leading-none">
-                              {new Date(s.startTime).getDate()}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-on-surface">
-                              {formatTimeLabel(s.startTime)} – {formatTimeLabel(s.endTime)}
-                            </p>
-                            <p className="text-xs font-semibold text-on-surface-variant mt-0.5 flex items-center gap-1.5">
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${getRoleColor(s.role)}`}>{s.role?.replace('_', ' ')}</span>
-                              <span className="text-outline">•</span>
-                              {getShiftDuration(s.startTime, s.endTime)}
-                            </p>
-                          </div>
+                <span className="text-xs font-bold text-outline bg-surface-variant px-2 py-1 rounded-md border border-outline-variant/30">
+                  {upcomingShifts.length} shifts
+                </span>
+              </div>
+              <div className="divide-y divide-outline-variant/20">
+                {upcomingShifts.map(s => {
+                  const isWaiting = s.status === 'WAITING_SWAP';
+                  return (
+                    <div key={s.id} className="p-4 hover:bg-surface-variant/30 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center shrink-0">
+                          <span className="text-[10px] font-bold text-primary uppercase">
+                            {new Date(s.startTime).toLocaleDateString('en-US', { month: 'short' })}
+                          </span>
+                          <span className="text-lg font-extrabold text-primary leading-none mt-0.5">
+                            {new Date(s.startTime).getDate()}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {isClockedOut ? (
-                            <span className="text-[9px] font-bold text-outline bg-surface-variant px-2 py-1 rounded uppercase tracking-wider">Done</span>
-                          ) : s.status === 'WAITING_SWAP' ? (
-                            <span className="text-[9px] font-bold text-on-warning bg-warning-container px-2 py-1 rounded border border-warning uppercase">Swap Pending</span>
-                          ) : (
-                            <button
-                              className="text-xs font-bold text-primary border border-primary/20 px-2.5 py-1.5 rounded-lg hover:bg-primary/5 transition-colors"
-                              onClick={() => handleRequestSwap(s.id)}
-                            >
-                              Swap
-                            </button>
-                          )}
+                        <div>
+                          <p className="text-sm font-bold text-on-surface flex items-center gap-2">
+                            {formatTimeLabel(s.startTime)} – {formatTimeLabel(s.endTime)}
+                            {isWaiting && (
+                              <span className="text-[9px] font-bold text-on-warning bg-warning-container px-1.5 py-0.5 rounded border border-warning uppercase shrink-0">
+                                Swap Pending
+                              </span>
+                            )}
+                          </p>
+                          <div className="text-xs font-semibold text-on-surface-variant mt-1.5 flex items-center gap-2">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${getRoleColor(s.role)}`}>
+                              {s.role?.replace('_', ' ')}
+                            </span>
+                            <span className="text-outline">•</span>
+                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {getShiftDuration(s.startTime, s.endTime)}</span>
+                          </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                      
+                      {!isWaiting && (
+                        <Button 
+                          variant="outline" 
+                          className="text-xs font-bold h-8 shrink-0 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors"
+                          onClick={() => handleRequestSwap(s.id)}
+                        >
+                          <ArrowLeftRight className="w-3.5 h-3.5 mr-1.5" /> Request Swap
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            )}
+            </div>
+          )}
+        </div>
 
-            {/* My Leave Requests */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-primary" />Leave Requests
-                </h3>
-                <button
-                  onClick={() => setIsLeaveModalOpen(true)}
-                  className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-                >
-                  + Request Leave
-                </button>
-              </div>
+        {/* Right Sidebar */}
+        <div className="space-y-6">
+          
+          {/* Quick Swap Hub (Feature 2) */}
+          <div className="bg-surface rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-outline-variant/30 flex items-center justify-between bg-surface-variant/30">
+              <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider flex items-center gap-2">
+                <ArrowLeftRight className="w-4 h-4 text-[#7c3aed]" /> Swap Hub
+              </h3>
+              <span className="text-xs font-bold text-outline bg-surface-variant border border-outline-variant/30 px-2 py-1 rounded-md">
+                {marketplaceSwaps.length} available
+              </span>
+            </div>
+            
+            <div className="p-5 flex-1">
+              {marketplaceSwaps.length === 0 ? (
+                <div className="text-center py-6 text-sm text-outline-variant font-semibold">
+                  <AlertTriangle className="w-8 h-8 text-outline-variant/50 mx-auto mb-2" />
+                  No open shifts on the marketplace right now.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {marketplaceSwaps.slice(0, 4).map(swap => (
+                    <div key={swap.id} className="p-3 rounded-xl border border-outline-variant/40 bg-surface-variant/20 hover:bg-surface-variant/50 transition-colors">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="text-xs font-bold text-on-surface uppercase">
+                            {new Date(swap.shift?.startTime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </p>
+                          <p className="text-[10px] font-semibold text-on-surface-variant">
+                            {formatTimeLabel(swap.shift?.startTime)} – {formatTimeLabel(swap.shift?.endTime)}
+                          </p>
+                        </div>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${getRoleColor(swap.shift?.role)}`}>
+                          {swap.shift?.role?.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-outline mb-2 flex items-center gap-1">
+                        <Avatar name={swap.requestedBy?.name || '?'} size="xs" /> {swap.requestedBy?.name || 'A teammate'} is offering this shift.
+                      </p>
+                      <Button variant="outline" className="w-full text-[10px] h-7 bg-surface">
+                        Pick up shift
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Leave Requests */}
+          <div className="bg-surface rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
+            <div className="p-5 border-b border-outline-variant/30 flex items-center justify-between bg-surface-variant/30">
+              <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#d97706]" /> My Leave
+              </h3>
+              <button
+                onClick={() => setIsLeaveModalOpen(true)}
+                className="text-xs font-bold text-primary hover:underline"
+              >
+                + Request
+              </button>
+            </div>
+            
+            <div className="p-2">
               {myLeaves.length === 0 ? (
-                <div className="text-center py-5 text-sm text-outline-variant font-semibold bg-surface rounded-xl border border-outline-variant/30 shadow-sm">
-                  <CalendarRange className="w-8 h-8 text-outline-variant mx-auto mb-1.5" />
+                <div className="text-center py-6 text-sm text-outline-variant font-semibold">
+                  <CalendarRange className="w-8 h-8 text-outline-variant/50 mx-auto mb-2" />
                   No leave requests yet.
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {myLeaves.slice(0, 5).map(leave => {
                     const statusConfig = {
-                      PENDING:  { color: 'bg-warning-container text-on-warning border-warning', icon: <Clock className="w-3.5 h-3.5" /> },
-                      APPROVED: { color: 'bg-[#f0fdf4] text-[#15803d] border-[#86efac]', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-                      REJECTED: { color: 'bg-[#fef2f2] text-[#b91c1c] border-[#fca5a5]', icon: <XCircle className="w-3.5 h-3.5" /> }
+                      PENDING:  { color: 'text-on-warning bg-warning-container border-warning', icon: <Clock className="w-3 h-3" /> },
+                      APPROVED: { color: 'text-[#15803d] bg-[#f0fdf4] border-[#86efac] dark:bg-[#15803d]/20 dark:text-[#4ade80] dark:border-[#4ade80]/50', icon: <CheckCircle2 className="w-3 h-3" /> },
+                      REJECTED: { color: 'text-[#b91c1c] bg-[#fef2f2] border-[#fca5a5] dark:bg-[#b91c1c]/20 dark:text-[#f87171] dark:border-[#f87171]/50', icon: <XCircle className="w-3 h-3" /> }
                     };
                     const config = statusConfig[leave.status] || statusConfig.PENDING;
                     return (
                       <div
                         key={leave.id}
-                        className={`flex items-center justify-between p-3.5 rounded-xl border bg-surface shadow-sm ${
-                          leave.status === 'APPROVED' ? 'border-[#86efac]/50' :
-                          leave.status === 'REJECTED' ? 'border-[#fca5a5]/50' : 'border-outline-variant/30'
-                        }`}
+                        className="flex items-center justify-between p-3 rounded-xl hover:bg-surface-variant/30 transition-colors"
                       >
                         <div>
-                          <p className="text-sm font-bold text-on-surface">
+                          <p className="text-xs font-bold text-on-surface">
                             {new Date(leave.leaveDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                           </p>
-                          <p className="text-xs font-medium text-on-surface-variant mt-0.5">{leave.reason || 'Personal'}</p>
+                          <p className="text-[10px] font-semibold text-on-surface-variant mt-0.5 line-clamp-1">{leave.reason || 'Personal'}</p>
                         </div>
-                        <div className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg border ${config.color}`}>
+                        <div className={`flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-md border ${config.color}`}>
                           {config.icon}
                           {leave.status}
                         </div>
@@ -446,88 +506,41 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
                 </div>
               )}
             </div>
-
           </div>
+
         </div>
+      </div>
 
-        {/* Bottom Navigation */}
-        <div className="absolute bottom-0 left-0 right-0 bg-surface/90 backdrop-blur-md border-t border-outline-variant/30 flex justify-around items-center px-4 py-3 pb-safe z-20">
-          <button className="flex flex-col items-center gap-1 group">
-            <div className="w-10 h-7 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <Home className="w-4 h-4 text-primary" />
-            </div>
-            <span className="text-[9px] font-bold text-primary uppercase tracking-wider">Home</span>
-          </button>
-
-          <button
-            className="flex flex-col items-center gap-1 group"
-            onClick={() => fetchMyShifts(true)}
-            disabled={syncing}
-          >
-            <div className="w-10 h-7 rounded-full bg-surface-variant flex items-center justify-center group-hover:bg-surface-variant/70 transition-colors">
-              <RefreshCw className={`w-4 h-4 text-outline ${syncing ? 'animate-spin text-primary' : ''}`} />
-            </div>
-            <span className="text-[9px] font-bold text-outline uppercase tracking-wider">{syncing ? 'Syncing' : 'Sync'}</span>
-          </button>
-
-          <button
-            className="flex flex-col items-center gap-1 group"
-            onClick={() => setIsLeaveModalOpen(true)}
-          >
-            <div className="w-10 h-7 rounded-full bg-surface-variant flex items-center justify-center group-hover:bg-surface-variant/70 transition-colors relative">
-              <CalendarRange className="w-4 h-4 text-outline" />
-              {myLeaves.filter(l => l.status === 'PENDING').length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-[#f59e0b] text-white text-[8px] font-bold rounded-full flex items-center justify-center">
-                  {myLeaves.filter(l => l.status === 'PENDING').length}
-                </span>
-              )}
-            </div>
-            <span className="text-[9px] font-bold text-outline uppercase tracking-wider">Leave</span>
-          </button>
-
-          <button
-            onClick={() => { onLogout(); }}
-            className="flex flex-col items-center gap-1 group"
-          >
-            <div className="w-10 h-7 rounded-full bg-surface-variant flex items-center justify-center group-hover:bg-error/10 transition-colors">
-              <LogOut className="w-4 h-4 text-outline group-hover:text-error transition-colors" />
-            </div>
-            <span className="text-[9px] font-bold text-outline uppercase tracking-wider">Logout</span>
-          </button>
-        </div>
-
-        {/* Request Leave Modal */}
-        <Modal isOpen={isLeaveModalOpen} onClose={() => setIsLeaveModalOpen(false)} title="Request Leave">
-          <form onSubmit={handleRequestLeave} className="space-y-4">
-            <Input
-              label="Leave Date"
-              type="date"
-              value={leaveDate}
-              onChange={e => setLeaveDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
+      {/* Request Leave Modal */}
+      <Modal isOpen={isLeaveModalOpen} onClose={() => setIsLeaveModalOpen(false)} title="Request Leave">
+        <form onSubmit={handleRequestLeave} className="space-y-5 mt-2">
+          <Input
+            label="Leave Date"
+            type="date"
+            value={leaveDate}
+            onChange={e => setLeaveDate(e.target.value)}
+            min={new Date().toISOString().split('T')[0]}
+            required
+          />
+          <div>
+            <label className="block text-sm font-bold text-on-surface mb-1.5">Reason for Leave</label>
+            <textarea
+              className="w-full border border-outline-variant bg-surface text-on-surface rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary shadow-sm text-sm resize-none transition-all placeholder:text-outline"
+              value={leaveReason}
+              onChange={e => setLeaveReason(e.target.value)}
+              placeholder="e.g. Medical appointment, family occasion"
+              rows={3}
               required
             />
-            <div>
-              <label className="block text-sm font-bold text-on-surface mb-1.5">Reason for Leave</label>
-              <textarea
-                className="w-full border border-outline-variant rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-[#1e1a8a]/30 focus:border-primary shadow-sm text-sm resize-none transition-all"
-                value={leaveReason}
-                onChange={e => setLeaveReason(e.target.value)}
-                placeholder="e.g. Medical appointment, family occasion"
-                rows={3}
-                required
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" type="button" onClick={() => setIsLeaveModalOpen(false)}>Cancel</Button>
-              <Button variant="primary" type="submit" className="bg-primary text-on-primary" isLoading={submittingLeave}>
-                Submit Request
-              </Button>
-            </div>
-          </form>
-        </Modal>
-
-      </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant/30">
+            <Button variant="ghost" type="button" onClick={() => setIsLeaveModalOpen(false)}>Cancel</Button>
+            <Button variant="primary" type="submit" className="bg-[#f59e0b] hover:bg-[#d97706] text-white border-transparent" isLoading={submittingLeave}>
+              Submit Request
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

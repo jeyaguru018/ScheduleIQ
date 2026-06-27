@@ -156,6 +156,15 @@ public class AutoSchedulerService {
                 model.addLessOrEqual(totalHours.build(), emp.getMaxHoursPerWeek());
             }
 
+            // Rule F: Employee Role must match Shift Role
+            for (Employee emp : employees) {
+                for (Shift shift : openShifts) {
+                    if (emp.getRole() != shift.getRole()) {
+                        model.addEquality(x.get(emp.getId()).get(shift.getId()), 0);
+                    }
+                }
+            }
+
             job.setProgressPct(60);
             jobStatusRepository.save(Objects.requireNonNull(job));
 
@@ -263,6 +272,9 @@ public class AutoSchedulerService {
                 // Check weekly hours cap
                 double currentHours = employeeHours.get(emp.getId());
                 if (currentHours + shiftDuration > emp.getMaxHoursPerWeek()) continue;
+
+                // Check role match
+                if (emp.getRole() != shift.getRole()) continue;
 
                 // Check leave day
                 if (leaveMap.containsKey(emp.getId()) &&
