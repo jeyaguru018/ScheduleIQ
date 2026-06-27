@@ -199,6 +199,7 @@ export async function publishSchedule(weekStart, weekEnd) {
 export async function getSwapRequests() {
   return apiFetch('/api/swaps');
 }
+export const getSwaps = getSwapRequests;
 
 export async function createSwapRequest(shiftId, targetEmployeeId) {
   return apiFetch('/api/swaps', {
