@@ -20,6 +20,7 @@ Traditional scheduling tools are either too rigid or rely on simple rule-based a
 ## ✨ Key Features
 
 - 🧠 **AI-Powered Auto-Scheduler**: Utilizes Google OR-Tools (CP-SAT) to generate mathematically optimal schedules while respecting strict labor compliance laws (e.g., maximum 40-hour work weeks) and required rest periods (8+ hours between shifts).
+- 📈 **Machine Learning Forecasting**: Integrates Python-based ML services (Random Forest) for no-show risk prediction and demand forecasting. *(Note: The ML models are trained on synthetically generated datasets simulating realistic workforce risk factors for portfolio demonstration purposes).*
 - ⚡ **High-Performance Redis Caching**: Asynchronous scheduling jobs and real-time dashboard data are accelerated using Redis, drastically reducing database load and response times.
 - 🔄 **Intelligent Fallback Mechanism**: Built-in greedy fallback algorithms ensure that if the mathematical constraint solver hits an infeasible state or Redis goes offline, a highly optimal schedule is still generated via Java-based heuristics.
 - 📊 **Manager Command Center**: A comprehensive analytics dashboard providing real-time insights into labor costs, shift coverage, overtime compliance alerts, and fairness distribution.

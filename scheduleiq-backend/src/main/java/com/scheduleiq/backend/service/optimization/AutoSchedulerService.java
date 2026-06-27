@@ -155,14 +155,24 @@ public class AutoSchedulerService {
                 }
             }
 
-            // Rule E: Weekly hours cap per employee
+            // Rule E: Weekly hours cap per employee & Fairness tracking
+            List<IntVar> empHoursVars = new ArrayList<>();
             for (Employee emp : employees) {
                 LinearExprBuilder totalHours = LinearExpr.newBuilder();
                 for (Shift shift : openShifts) {
                     double durationHours = Duration.between(shift.getStartTime(), shift.getEndTime()).toMinutes() / 60.0;
                     totalHours.addTerm(x.get(emp.getId()).get(shift.getId()), (long) durationHours);
                 }
-                model.addLessOrEqual(totalHours.build(), emp.getMaxHoursPerWeek());
+                int cap = emp.getMaxHoursPerWeek() != null && emp.getMaxHoursPerWeek() > 0 ? emp.getMaxHoursPerWeek() : 40;
+                IntVar empHours = model.newIntVar(0, cap, "empHours_" + emp.getId());
+                model.addEquality(empHours, totalHours.build());
+                empHoursVars.add(empHours);
+            }
+
+            // Fairness Balancing: Track the maximum hours worked by any single employee
+            IntVar maxTeamHours = model.newIntVar(0, 40, "maxTeamHours");
+            if (!empHoursVars.isEmpty()) {
+                model.addMaxEquality(maxTeamHours, empHoursVars);
             }
 
             // Rule F: Employee Role must match Shift Role
@@ -188,6 +198,13 @@ public class AutoSchedulerService {
                     objective.addTerm(x.get(emp.getId()).get(shift.getId()), weight);
                 }
             }
+            
+            // Apply mathematically enforced fairness by penalizing the maximum hours any employee works
+            // This pushes the solver to distribute hours evenly across the team, lowering the max bounds.
+            if (!empHoursVars.isEmpty()) {
+                objective.addTerm(maxTeamHours, -5000L);
+            }
+
             model.maximize(objective.build());
 
             // 7. Solve
@@ -249,7 +266,7 @@ public class AutoSchedulerService {
         }
     }
 
-    private void runGreedyFallbackScheduler(Long managerId, List<Employee> employees, List<Shift> openShifts, List<LeaveRequest> approvedLeaves) {
+    void runGreedyFallbackScheduler(Long managerId, List<Employee> employees, List<Shift> openShifts, List<LeaveRequest> approvedLeaves) {
         log.info(">>> Running Java Greedy Fallback Scheduler with {} employees, {} shifts", employees.size(), openShifts.size());
 
         // Sort employees by hourly rate (cheapest first for cost efficiency)
@@ -319,7 +336,7 @@ public class AutoSchedulerService {
         return s1.getStartTime().isBefore(s2.getEndTime()) && s2.getStartTime().isBefore(s1.getEndTime());
     }
 
-    private boolean restPeriodTooShort(Shift s1, Shift s2, int restHours) {
+    boolean restPeriodTooShort(Shift s1, Shift s2, int restHours) {
         if (s1.getEndTime().isBefore(s2.getStartTime())) {
             long restDurationMinutes = Duration.between(s1.getEndTime(), s2.getStartTime()).toMinutes();
             return restDurationMinutes < (restHours * 60);
