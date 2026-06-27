@@ -133,8 +133,8 @@ export function SwapMarketplace() {
         
         <div className="flex items-center justify-between mb-8 shrink-0">
           <div>
-            <h2 className="text-3xl font-bold text-on-surface tracking-tight">Swap Marketplace</h2>
-            <p className="text-on-surface-variant mt-1">Review and manage peer-to-peer schedule exchanges.</p>
+            <h2 className="text-3xl font-extrabold text-on-surface tracking-tight">Swap Marketplace</h2>
+            <p className="text-sm font-semibold text-on-surface-variant mt-1">Review and manage peer-to-peer schedule exchanges.</p>
           </div>
           <div className="flex items-center bg-surface border border-outline-variant p-1 rounded-lg shadow-sm">
             <button className="px-4 py-1.5 rounded bg-surface-variant text-sm font-bold text-on-surface">All Shifts</button>
@@ -188,38 +188,38 @@ export function SwapMarketplace() {
                     
                     {/* Initiator */}
                     <div className="w-[45%] text-left bg-surface pr-2">
-                      <div className="text-[10px] font-bold text-outline uppercase tracking-wider mb-3">Initiator</div>
-                      <div className="flex items-center gap-3 mb-4">
+                      <div className="text-xs font-extrabold text-primary uppercase tracking-wider mb-2">Initiator</div>
+                      <div className="flex items-center gap-3 mb-3">
                         <Avatar name={swap.initiator.name} size="md" />
                         <div>
-                          <div className="text-sm font-bold text-on-surface truncate max-w-[120px]">{swap.initiator.name}</div>
-                          <div className="text-xs font-medium text-on-surface-variant">{swap.initiator.role}</div>
+                          <div className="text-sm font-extrabold text-on-surface truncate max-w-[140px]">{swap.initiator.name}</div>
+                          <div className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded inline-block mt-0.5">{swap.initiator.role}</div>
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-[10px] font-bold text-outline uppercase tracking-wider">Giving up:</div>
-                        <div className="text-xs font-semibold text-on-surface bg-surface-variant/50 border border-outline-variant/50 px-2 py-1 rounded inline-block truncate max-w-full">{swap.givingUp}</div>
+                        <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Giving up:</div>
+                        <div className="text-xs font-bold text-on-surface bg-surface-variant border border-outline-variant/80 px-2.5 py-1.5 rounded-lg inline-block truncate max-w-full shadow-2xs">{swap.givingUp}</div>
                       </div>
                     </div>
 
                     {/* Icon */}
-                    <div className="w-8 h-8 rounded-full bg-surface border border-outline-variant flex items-center justify-center shrink-0 z-10 shadow-sm text-primary">
+                    <div className="w-9 h-9 rounded-full bg-surface border-2 border-primary/30 flex items-center justify-center shrink-0 z-10 shadow-md text-primary">
                       <ArrowRightLeft className="w-4 h-4" />
                     </div>
 
                     {/* Recipient */}
                     <div className="w-[45%] text-right bg-surface pl-2">
-                      <div className="text-[10px] font-bold text-outline uppercase tracking-wider mb-3">Recipient</div>
-                      <div className="flex items-center justify-end gap-3 mb-4">
+                      <div className="text-xs font-extrabold text-primary uppercase tracking-wider mb-2">Recipient</div>
+                      <div className="flex items-center justify-end gap-3 mb-3">
                         <div className="text-right">
-                          <div className="text-sm font-bold text-on-surface truncate max-w-[120px]">{swap.recipient.name}</div>
-                          <div className="text-xs font-medium text-on-surface-variant">{swap.recipient.role}</div>
+                          <div className="text-sm font-extrabold text-on-surface truncate max-w-[140px]">{swap.recipient.name}</div>
+                          <div className="text-xs font-bold text-secondary bg-secondary/10 px-2 py-0.5 rounded inline-block mt-0.5">{swap.recipient.role}</div>
                         </div>
                         <Avatar name={swap.recipient.name} size="md" />
                       </div>
                       <div className="space-y-1">
-                        <div className="text-[10px] font-bold text-outline uppercase tracking-wider">Taking shift:</div>
-                        <div className="text-xs font-semibold text-on-warning bg-warning-container border border-warning px-2 py-1 rounded inline-block truncate max-w-full">{swap.takingShift}</div>
+                        <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Taking shift:</div>
+                        <div className="text-xs font-bold text-on-warning bg-warning-container border border-warning/60 px-2.5 py-1.5 rounded-lg inline-block truncate max-w-full shadow-2xs">{swap.takingShift}</div>
                       </div>
                     </div>
                   </div>

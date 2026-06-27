@@ -1,6 +1,7 @@
 package com.scheduleiq.backend.service.messaging;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scheduleiq.backend.service.optimization.AutoSchedulerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -17,6 +18,7 @@ public class ScheduleJobPublisher {
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final AutoSchedulerService autoSchedulerService;
 
     public void publishJob(String jobId, LocalDateTime weekStart, LocalDateTime weekEnd, double budgetCap, Long managerId) {
         try {
@@ -31,8 +33,9 @@ public class ScheduleJobPublisher {
             redisTemplate.convertAndSend("schedule_generation_jobs", message);
             log.info("Published async schedule generation job to Redis: {}", jobId);
         } catch (Exception e) {
-            log.error("Failed to publish schedule job to Redis", e);
-            throw new RuntimeException("Could not enqueue generation job.", e);
+            log.warn("Could not publish schedule job to Redis (Redis offline or error: {}). Executing via direct Spring @Async fallback...", e.getMessage());
+            // Fallback: execute directly via Spring @Async executor
+            autoSchedulerService.generateOptimalRoster(jobId, weekStart, weekEnd, budgetCap, managerId);
         }
     }
 }

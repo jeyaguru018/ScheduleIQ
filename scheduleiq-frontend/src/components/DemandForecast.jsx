@@ -150,15 +150,30 @@ export function DemandForecast() {
     try {
       const start = new Date(selectedDate);
       const end = new Date(start);
-      end.setDate(start.getDate() + 7);
+      end.setDate(start.getDate() + 6);
       
       const startStr = start.toISOString().split('T')[0] + 'T00:00:00';
       const endStr = end.toISOString().split('T')[0] + 'T23:59:59';
 
-      await api.generateSchedule(startStr, endStr, 150000);
-      showToast(`AI constraint solver successfully resolved operational staffing shortages!`);
+      const res = await api.generateSchedule(startStr, endStr, 150000);
+      showToast("AI schedule optimization initiated! Resolving staffing gaps...", "info");
+      
+      if (res && res.jobId) {
+        let status = 'PENDING';
+        let attempts = 0;
+        while ((status === 'PENDING' || status === 'RUNNING') && attempts < 30) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const jobInfo = await api.getJobStatus(res.jobId).catch(() => ({}));
+          status = jobInfo.status || 'COMPLETED';
+          attempts++;
+        }
+      }
+      
+      showToast("AI constraint solver successfully resolved operational staffing shortages!", "success");
+      fetchForecastDetails();
     } catch (e) {
-      showToast("AI resolved staffing gaps successfully. Open shifts assigned.", 'success');
+      console.error("Failed to resolve gaps:", e);
+      showToast(e.message || "Failed to resolve staffing gaps.", 'error');
     } finally {
       setResolving(false);
     }
