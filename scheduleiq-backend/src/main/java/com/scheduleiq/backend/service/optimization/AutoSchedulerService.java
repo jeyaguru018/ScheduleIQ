@@ -55,7 +55,16 @@ public class AutoSchedulerService {
 
             // 2. Get or create draft shifts for the week
             List<Shift> openShifts = shiftRepository.findByManagerIdAndStartTimeBetween(managerId, weekStart, weekEnd);
-            if (openShifts.isEmpty()) {
+            Set<Role> existingRoles = openShifts.stream().map(Shift::getRole).collect(Collectors.toSet());
+            Set<Role> teamRoles = employees.stream().map(Employee::getRole).collect(Collectors.toSet());
+            
+            if (openShifts.isEmpty() || !existingRoles.containsAll(teamRoles)) {
+                List<Shift> unassignedDrafts = openShifts.stream()
+                        .filter(s -> "DRAFT".equals(s.getStatus()) && s.getEmployee() == null)
+                        .collect(Collectors.toList());
+                if (!unassignedDrafts.isEmpty()) {
+                    shiftRepository.deleteAll(unassignedDrafts);
+                }
                 openShifts = createSmartDraftShiftsForWeek(weekStart, managerId, employees);
             }
 

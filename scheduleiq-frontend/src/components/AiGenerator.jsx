@@ -146,8 +146,12 @@ export function AiGenerator() {
         return;
       }
 
-      // Build schedule grid — only include shifts with assigned employees
+      // Build schedule grid — include all team members
       const empMap = {};
+      employees.forEach(e => {
+        empMap[e.id] = { employeeId: e.id, employeeName: e.name, role: e.role, days: Array(7).fill(null) };
+      });
+
       let totalAssignedHours = 0;
       let totalCost = 0;
       let assignedShiftCount = 0;
@@ -156,7 +160,7 @@ export function AiGenerator() {
       shifts.forEach(s => {
         if (!s.employee) {
           unassignedCount++;
-          return; // Skip unassigned shifts — no "Open Pool"
+          return; // Skip unassigned shifts
         }
 
         const empId = s.employee.id;

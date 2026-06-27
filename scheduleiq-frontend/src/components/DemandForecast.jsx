@@ -170,7 +170,7 @@ export function DemandForecast() {
       }
       
       showToast("AI constraint solver successfully resolved operational staffing shortages!", "success");
-      fetchForecastDetails();
+      fetchForecastData();
     } catch (e) {
       console.error("Failed to resolve gaps:", e);
       showToast(e.message || "Failed to resolve staffing gaps.", 'error');
