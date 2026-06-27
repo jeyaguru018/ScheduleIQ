@@ -200,7 +200,18 @@ export function EmployeeDashboard({ user, onOpenProfile, onLogout }) {
 
   const upcomingShifts = shifts.filter(s => s.id !== nextShift?.id && new Date(s.endTime) >= now);
 
-  const scheduledHours = shifts.filter(s => new Date(s.startTime).getTime() >= (now.getTime() - now.getDay() * 86400000)).reduce((acc, s) => {
+  const currentWeekStart = new Date(now);
+  currentWeekStart.setHours(0, 0, 0, 0);
+  currentWeekStart.setDate(now.getDate() - now.getDay());
+
+  const currentWeekEnd = new Date(currentWeekStart);
+  currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+  currentWeekEnd.setHours(23, 59, 59, 999);
+
+  const scheduledHours = shifts.filter(s => {
+    const st = new Date(s.startTime);
+    return st >= currentWeekStart && st <= currentWeekEnd;
+  }).reduce((acc, s) => {
     return acc + (new Date(s.endTime) - new Date(s.startTime)) / (1000 * 60 * 60);
   }, 0);
   const maxHours = user?.maxHoursPerWeek || 40;
