@@ -28,6 +28,11 @@ export function Login({ onLoginSuccess }) {
   const { showToast } = useToast();
 
   useEffect(() => {
+    // Force light theme on login/register page
+    document.documentElement.classList.remove('dark');
+  }, []);
+
+  useEffect(() => {
     // Check for Google OAuth2 errors
     const params = new URLSearchParams(window.location.search);
     const err = params.get('error');
