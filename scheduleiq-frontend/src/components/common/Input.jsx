@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 import { cn } from '../../lib/utils';
 
-export const Input = forwardRef(({ className, label, error, icon: Icon, id, ...props }, ref) => {
+export const Input = forwardRef(({ className, label, error, icon: Icon, iconClassName, id, ...props }, ref) => {
   return (
     <div className="w-full">
       {label && (
@@ -12,7 +12,7 @@ export const Input = forwardRef(({ className, label, error, icon: Icon, id, ...p
       <div className="relative">
         {Icon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Icon className="h-5 w-5 text-outline" />
+            <Icon className={cn("h-5 w-5 text-outline", iconClassName)} />
           </div>
         )}
         <input

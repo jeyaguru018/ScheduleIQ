@@ -197,7 +197,7 @@ export function Login({ onLoginSuccess }) {
               <button 
                 type="button" 
                 onClick={handleGoogleLogin}
-                className="w-full flex items-center justify-center gap-3 py-2.5 px-4 bg-white border border-outline-variant rounded-lg shadow-sm hover:bg-gray-50 transition-colors mb-6"
+                className="w-full flex items-center justify-center gap-3 py-2.5 px-4 bg-white border border-black rounded-lg shadow-sm hover:bg-gray-50 transition-colors mb-6"
               >
                 <svg viewBox="0 0 24 24" className="w-5 h-5">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -210,7 +210,7 @@ export function Login({ onLoginSuccess }) {
 
               <div className="flex items-center gap-4 mb-6">
                 <div className="flex-1 h-px bg-outline-variant"></div>
-                <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Or sign in with email</span>
+                <span className="text-[10px] font-bold text-black uppercase tracking-wider">Or sign in with email</span>
                 <div className="flex-1 h-px bg-outline-variant"></div>
               </div>
 
@@ -221,6 +221,7 @@ export function Login({ onLoginSuccess }) {
                   id="email" 
                   type="email" 
                   icon={Mail}
+                  iconClassName="text-black"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@company.com"
@@ -233,6 +234,7 @@ export function Login({ onLoginSuccess }) {
                     id="password" 
                     type={showLoginPassword ? 'text' : 'password'}
                     icon={Lock}
+                    iconClassName="text-black"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
@@ -242,7 +244,7 @@ export function Login({ onLoginSuccess }) {
                   <button
                     type="button"
                     onClick={() => setShowLoginPassword(v => !v)}
-                    className="absolute right-3 top-[2.1rem] text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-3 top-[2.1rem] text-black hover:text-black/80 transition-colors"
                     aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
                   >
                     {showLoginPassword
@@ -294,6 +296,7 @@ export function Login({ onLoginSuccess }) {
                   id="regName" 
                   type="text" 
                   icon={User}
+                  iconClassName="text-black"
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
                   placeholder="Jane Doe"
@@ -305,6 +308,7 @@ export function Login({ onLoginSuccess }) {
                   id="regEmail" 
                   type="email" 
                   icon={Mail}
+                  iconClassName="text-black"
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
                   placeholder="jane@company.com"
@@ -317,6 +321,7 @@ export function Login({ onLoginSuccess }) {
                     id="regPassword" 
                     type={showRegPassword ? 'text' : 'password'}
                     icon={Lock}
+                    iconClassName="text-black"
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
                     placeholder="••••••••"
@@ -326,7 +331,7 @@ export function Login({ onLoginSuccess }) {
                   <button
                     type="button"
                     onClick={() => setShowRegPassword(v => !v)}
-                    className="absolute right-3 top-[2.1rem] text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-3 top-[2.1rem] text-black hover:text-black/80 transition-colors"
                     aria-label={showRegPassword ? 'Hide password' : 'Show password'}
                   >
                     {showRegPassword
@@ -342,6 +347,7 @@ export function Login({ onLoginSuccess }) {
                       id="regRate" 
                       type="number" 
                       icon={DollarSign}
+                      iconClassName="text-black"
                       value={regRate}
                       onChange={(e) => setRegRate(e.target.value)}
                       required
@@ -353,6 +359,7 @@ export function Login({ onLoginSuccess }) {
                       id="regHours" 
                       type="number" 
                       icon={Clock}
+                      iconClassName="text-black"
                       value={regHours}
                       onChange={(e) => setRegHours(e.target.value)}
                       required
