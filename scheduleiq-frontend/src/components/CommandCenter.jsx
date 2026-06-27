@@ -149,14 +149,6 @@ export function CommandCenter() {
       const assignedShifts = shifts.filter(s => s.employee != null).length;
       const realCoverage = shifts.length > 0 ? Math.round((assignedShifts / shifts.length) * 100) : 0;
 
-      // Compute fairness from actual assigned shifts this week
-      const employeeHoursMap = {};
-      shifts.forEach(s => {
-        if (!s.employee) return;
-        const durationH = (new Date(s.endTime) - new Date(s.startTime)) / (1000 * 60 * 60);
-        employeeHoursMap[s.employee.id] = (employeeHoursMap[s.employee.id] || 0) + durationH;
-      });
-
       const mappedFairness = [...employees]
         .filter(e => e.role !== 'MANAGER')
         .map(emp => ({
