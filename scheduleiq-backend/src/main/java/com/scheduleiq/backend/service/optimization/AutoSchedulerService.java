@@ -347,18 +347,18 @@ public class AutoSchedulerService {
             {14, 22},  // Evening shift
         };
 
-        for (int day = 0; day < 7; day++) {
-            LocalDateTime dayStart = weekStart.plusDays(day);
-
-            // For each distinct role, create one shift per employee (rotate templates)
+        // Create shifts across the week such that each employee of a role gets at most 5 shifts (40h max)
+        for (Map.Entry<Role, List<Employee>> entry : byRole.entrySet()) {
+            Role role = entry.getKey();
+            int empCount = entry.getValue().size();
             int templateIdx = 0;
-            for (Map.Entry<Role, List<Employee>> entry : byRole.entrySet()) {
-                Role role = entry.getKey();
-                int empCount = entry.getValue().size();
 
-                // Create as many shifts as there are employees of this role (max 2 per day per role)
-                int shiftsForRole = Math.min(empCount, 2);
-                for (int i = 0; i < shiftsForRole; i++) {
+            // Generate shifts for 5 days per employee (40 hours max)
+            for (int i = 0; i < empCount; i++) {
+                // Pick 5 active days for this employee index to spread coverage across the 7-day week
+                for (int d = 0; d < 5; d++) {
+                    int day = (i + d) % 7; // staggered across days
+                    LocalDateTime dayStart = weekStart.plusDays(day);
                     int[] template = shiftTemplates[templateIdx % shiftTemplates.length];
                     templateIdx++;
 
@@ -374,7 +374,7 @@ public class AutoSchedulerService {
         }
 
         List<Shift> saved = shiftRepository.saveAll(Objects.requireNonNull(shifts));
-        log.info(">>> Created {} draft shifts for the week", saved.size());
+        log.info(">>> Created {} draft shifts for the week across all roles", saved.size());
         return saved;
     }
 }

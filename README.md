@@ -1,74 +1,90 @@
-# ScheduleIQ 🚀
-### AI-Powered Workforce Orchestration Platform
+<div align="center">
+  <img src="https://img.shields.io/badge/Status-Active-success" alt="Status" />
+  <img src="https://img.shields.io/badge/License-MIT-blue" alt="License" />
+  <img src="https://img.shields.io/badge/Version-1.0.0-orange" alt="Version" />
 
-**ScheduleIQ** is an intelligent, full-stack workforce management platform designed to solve the complex problem of employee scheduling in high-turnover, variable-demand industries like retail, logistics, and hospitality. 
+  <h1>🗓️ ScheduleIQ</h1>
+  <p><strong>Next-Generation AI-Powered Workforce Scheduling & Management Platform</strong></p>
+</div>
 
-By combining constraint-based optimization, a dedicated Python ML service, and a mobile-first peer-to-peer swap marketplace, ScheduleIQ streamlines shift scheduling, minimizes labor budget overruns, and mitigates the risk of employee no-shows.
+<br />
 
----
+## 📖 Overview
 
-## 💡 The Problem & The Solution
+**ScheduleIQ** is an enterprise-grade, AI-driven workforce management system designed to solve the complex constraints of shift scheduling. Leveraging advanced Constraint Programming (Google OR-Tools) and intelligent caching, it transforms hours of manual, error-prone roster planning into an automated, highly optimized process that ensures labor compliance, maximizes coverage, and prioritizes employee fairness.
 
-### The Challenge
-In shift-based workplaces, managers spend hours each week manually building rosters on spreadsheets. This leads to:
-* ⚠️ **Budget Overruns:** Accidentally scheduling employees for overtime.
-* ⚠️ **Understaffing / Coverage Gaps:** Misaligning staff count with daily store traffic/monsoons/holidays.
-* ⚠️ **No-Show Chaos:** Employees missing shifts without notice, leaving the business short-staffed.
-* ⚠️ **Shift Swap Friction:** Manual coordination via group chats that causes coverage imbalances.
-
-### The ScheduleIQ Solution
-1. **Constraint-Based Auto-Scheduler:** A smart algorithm generates optimal schedules in seconds, mathematically guaranteeing budget compliance and respecting employee preferences.
-2. **Predictive Risk Engine:** A Python machine learning microservice analyzes employee attendance history to predict "No-Show Risks" *before* shifts occur.
-3. **Smart Shift Swap Marketplace:** A peer-to-peer marketplace where employees trade shifts. The system automatically audits trades and alerts managers of potential labor rule violations or high no-show risks.
+Traditional scheduling tools are either too rigid or rely on simple rule-based algorithms. ScheduleIQ introduces a true mathematical optimization engine that balances budget constraints, employee availability, overlapping shift rules, and labor laws in real-time.
 
 ---
 
-## 🛠️ Architecture & Tech Stack
+## ✨ Key Features
 
-ScheduleIQ features a decoupled, production-ready microservices architecture:
-
-```mermaid
-graph TD
-    A[React Web Client] -->|REST API & WebSockets| B[Spring Boot Backend Engine]
-    B -->|Internal REST| C[Python Flask ML Microservice]
-    B -->|JPA/Hibernate| D[(PostgreSQL Database)]
-```
-
-### Frontend
-* **React 18** (Vite SPA)
-* **CSS3 & TailwindCSS** (Vibrant styling, dark modes, dynamic transitions)
-* **WebSockets** (Real-time notifications)
-
-### Core Backend
-* **Java 21 & Spring Boot 3**
-* **Spring Security & OAuth2** (JWT Stateless Session Management & Google Sign-In)
-* **Spring Data JPA & Hibernate**
-
-### ML & Optimization Service
-* **Python 3.10 & Flask** (Predictive analytics endpoints)
-* **Docker & Docker Compose** (Containerized build pipeline)
-
-### Database
-* **PostgreSQL** (ACID transactional integrity, normalized relations)
+- 🧠 **AI-Powered Auto-Scheduler**: Utilizes Google OR-Tools (CP-SAT) to generate mathematically optimal schedules while respecting strict labor compliance laws (e.g., maximum 40-hour work weeks) and required rest periods (8+ hours between shifts).
+- ⚡ **High-Performance Redis Caching**: Asynchronous scheduling jobs and real-time dashboard data are accelerated using Redis, drastically reducing database load and response times.
+- 🔄 **Intelligent Fallback Mechanism**: Built-in greedy fallback algorithms ensure that if the mathematical constraint solver hits an infeasible state or Redis goes offline, a highly optimal schedule is still generated via Java-based heuristics.
+- 📊 **Manager Command Center**: A comprehensive analytics dashboard providing real-time insights into labor costs, shift coverage, overtime compliance alerts, and fairness distribution.
+- 🤝 **Employee Swap Marketplace**: A decentralized, self-serve marketplace allowing employees to negotiate and swap shifts, dynamically updating the roster upon manager approval.
+- 🌗 **Premium UI/UX**: A highly polished, responsive interface built with Tailwind CSS, featuring seamless Light/Dark mode toggling and a modern, accessible design system.
 
 ---
 
-## ✨ Key Features Showcase
+## 🛠️ Tech Stack
 
-### 👔 Manager Dashboard
-* **Dynamic Analytics:** Real-time visibility into weekly labor hours, projected salary costs, and understaffing alerts.
-* **Auto-Scheduler Engine:** Generates a weekly schedule automatically, factoring in employee availabilities, roles, and budget limits.
-* **Demand Forecast Visualizer:** Beautiful charts mapping historic customer footfall, weather conditions, and seasonal surges.
+**Backend**
+- **Java 21 & Spring Boot 3**: Robust, scalable enterprise architecture.
+- **Google OR-Tools**: Constraint programming solver for complex combinatorial optimization.
+- **PostgreSQL**: Relational database for persistent transactional data.
+- **Redis**: Distributed in-memory caching and message brokering.
 
-### 👤 Employee Portal
-* **Mobile-First Shift Viewer:** Clean interface for employees to view scheduled shifts, hourly rates, and earnings.
-* **Availability Preferences:** Easy-to-use scheduler for setting weekly shift preferences.
-* **Shift Swapping Marketplace:** Submit swap requests to peers, monitor real-time swap requests, and coordinate schedule adjustments instantly.
+**Frontend**
+- **React.js & Vite**: Lightning-fast, modern frontend framework.
+- **Tailwind CSS**: Utility-first styling for a premium, responsive UI.
+- **Lucide React**: Beautiful, consistent iconography.
 
 ---
 
-## 📈 System Design Highlights
+## ⚙️ How It Works
 
-* **Decoupled Business & Data Science Logic:** Decoupled ML capabilities from the core Java backend to prevent resource starvation during complex ML predictions.
-* **Secure JWT Session Management:** Implemented custom stateless JWT filters alongside Google OAuth2 integration for passwordless authentication.
-* **Cascading Transaction Security:** Configured JPA mappings with precise lifecycle rules to protect data integrity during multi-step shift trades.
+1. **Demand Forecasting**: Managers define the required roles and shift timings based on expected foot traffic.
+2. **Constraint Modeling**: The backend translates business rules (budget caps, role requirements) and labor laws (overtime limits, mandatory rest) into a mathematical model.
+3. **Optimization Engine**: Google OR-Tools evaluates millions of permutations to find the optimal assignment of employees to shifts.
+4. **Execution**: The generated roster is published. Employees can view their schedules via their personalized dashboard and request swaps or leaves, feeding new constraints back into the engine.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Java 21+
+- Node.js 18+
+- PostgreSQL
+- Redis Server
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/jeyaguru018/ScheduleIQ.git
+   cd ScheduleIQ
+   ```
+
+2. **Backend Setup**
+   ```bash
+   cd scheduleiq-backend
+   mvn clean install
+   # Configure application.yml with your Postgres and Redis credentials
+   mvn spring-boot:run
+   ```
+
+3. **Frontend Setup**
+   ```bash
+   cd ../scheduleiq-frontend
+   npm install
+   npm run dev
+   ```
+
+---
+
+<div align="center">
+  Built with ❤️ for modern workforce management.
+</div>

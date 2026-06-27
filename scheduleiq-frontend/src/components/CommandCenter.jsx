@@ -118,7 +118,32 @@ export function CommandCenter() {
         leaveId: leave.id
       }));
 
-      const allAlerts = [...leaveAlerts, ...mappedAlerts];
+      // Compute fairness from actual assigned shifts this week
+      const employeeHoursMap = {};
+      shifts.forEach(s => {
+        if (!s.employee) return;
+        const durationH = (new Date(s.endTime) - new Date(s.startTime)) / (1000 * 60 * 60);
+        employeeHoursMap[s.employee.id] = (employeeHoursMap[s.employee.id] || 0) + durationH;
+      });
+
+      // Compute overtime compliance alerts
+      const overtimeAlerts = [];
+      employees.filter(e => e.role !== 'MANAGER').forEach(emp => {
+        const h = employeeHoursMap[emp.id] || 0;
+        const cap = emp.maxHoursPerWeek || 40;
+        if (h > cap) {
+          overtimeAlerts.push({
+            id: `overtime-${emp.id}`,
+            name: emp.name,
+            time: `${h.toFixed(1)}h scheduled`,
+            role: `Overtime Alert: Exceeds ${cap}h cap`,
+            noShowRisk: 0.9,
+            type: 'overtime'
+          });
+        }
+      });
+
+      const allAlerts = [...overtimeAlerts, ...leaveAlerts, ...mappedAlerts];
 
       // Compute coverage: % of shifts that have an assigned employee
       const assignedShifts = shifts.filter(s => s.employee != null).length;
