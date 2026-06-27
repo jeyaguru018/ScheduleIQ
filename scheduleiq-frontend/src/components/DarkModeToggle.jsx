@@ -63,28 +63,22 @@ export function DarkModeToggle({ className = '' }) {
         ${className}
       `}
     >
-      {/* Track background icons removed to prevent duplicate sun/moon confusion */}
-
       {/* Sliding knob */}
       <span
         className={`
           absolute top-[3px] left-[3px] w-[22px] h-[22px] rounded-full
-          flex items-center justify-center
+          bg-white shadow-3d-btn
           transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-          shadow-3d-btn
           ${isDark
-            ? 'translate-x-7 bg-white'
-            : 'translate-x-0 bg-white'
+            ? 'translate-x-7'
+            : 'translate-x-0'
           }
         `}
-      >
-        {/* Icon inside the knob that animates on toggle */}
-        <span className={isAnimating ? 'animate-spin-once' : ''}>
-          {isDark
-            ? <Moon className="w-3 h-3 text-primary" />
-            : <Sun  className="w-3 h-3 text-warning"  />
-          }
-        </span>
+      />
+      {/* Track icons */}
+      <span className="absolute inset-0 flex items-center justify-between px-1.5 pointer-events-none z-10">
+        <Sun className={`w-3.5 h-3.5 transition-colors duration-300 ${!isDark ? 'text-amber-500' : 'text-white/60'}`} />
+        <Moon className={`w-3.5 h-3.5 transition-colors duration-300 ${isDark ? 'text-indigo-600' : 'text-gray-500'}`} />
       </span>
     </button>
   );

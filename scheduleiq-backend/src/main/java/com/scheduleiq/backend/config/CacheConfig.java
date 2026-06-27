@@ -20,6 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CachingConfigurer;
+
 /**
  * CacheConfig v2.0 — Dual-mode cache: Redis (production) + Caffeine (local dev fallback).
  *
@@ -31,9 +34,10 @@ import java.util.concurrent.TimeUnit;
  *   - "shifts"          : Published shift data. 5-min TTL.
  *   - "leaveRequests"   : Leave request lists. 2-min TTL (changes frequently).
  */
+@Slf4j
 @Configuration
 @EnableCaching
-public class CacheConfig {
+public class CacheConfig implements CachingConfigurer {
 
     /**
      * Primary CacheManager using Redis for distributed caching.
@@ -79,5 +83,30 @@ public class CacheConfig {
                 .withInitialCacheConfigurations(cacheConfigs)
                 .transactionAware()
                 .build();
+    }
+
+    @Override
+    public org.springframework.cache.interceptor.CacheErrorHandler errorHandler() {
+        return new org.springframework.cache.interceptor.CacheErrorHandler() {
+            @Override
+            public void handleCacheGetError(RuntimeException exception, org.springframework.cache.Cache cache, Object key) {
+                log.warn("Cache GET error on {}: {}", cache.getName(), exception.getMessage());
+            }
+
+            @Override
+            public void handleCachePutError(RuntimeException exception, org.springframework.cache.Cache cache, Object key, Object value) {
+                log.warn("Cache PUT error on {}: {}", cache.getName(), exception.getMessage());
+            }
+
+            @Override
+            public void handleCacheEvictError(RuntimeException exception, org.springframework.cache.Cache cache, Object key) {
+                log.warn("Cache EVICT error on {}: {}", cache.getName(), exception.getMessage());
+            }
+
+            @Override
+            public void handleCacheClearError(RuntimeException exception, org.springframework.cache.Cache cache) {
+                log.warn("Cache CLEAR error on {}: {}", cache.getName(), exception.getMessage());
+            }
+        };
     }
 }

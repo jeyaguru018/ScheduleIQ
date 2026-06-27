@@ -302,7 +302,7 @@ export function ControlRoom() {
               {/* Zone D: Off-Duty / Backup Pool */}
               <div className="border border-outline-variant rounded-xl p-4 bg-surface shadow-sm flex flex-col">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-xs font-extrabold text-outline bg-surface-variant px-2.5 py-0.5 rounded-full uppercase tracking-wider">Off-Duty Pool</span>
+                  <span className="text-xs font-extrabold text-[#3b82f6] bg-[#3b82f6]/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">Off-Duty Pool</span>
                   <span className="text-[10px] font-bold text-outline uppercase">Available</span>
                 </div>
                 <div className="flex-1 flex flex-wrap gap-2 items-center justify-start overflow-y-auto max-h-[120px] p-1">

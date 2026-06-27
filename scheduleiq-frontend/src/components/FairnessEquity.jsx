@@ -26,7 +26,7 @@ export function FairnessEquity() {
     loadData();
   }, []);
 
-  const totalHrsScore = employees.length ? Math.round(employees.reduce((acc, e) => acc + (e.fairnessScore || 0), 0) / employees.length * 100) : 0;
+  const totalHrsScore = employees.length ? Math.round(employees.reduce((acc, e) => acc + (e.fairnessScore || 0), 0) / employees.length) : 0;
   
   const pieData = employees.length ? [
     { name: 'Total Hrs', value: totalHrsScore, color: '#1e1a8a' },
@@ -38,7 +38,7 @@ export function FairnessEquity() {
 
   const employeeIndex = employees
     .map(e => {
-      const score = Math.round((e.fairnessScore || 0) * 100);
+    const score = Math.round(e.fairnessScore || 0);
       let color = 'bg-[#14b8a6]';
       if (score < 80) color = 'bg-primary';
       if (score < 65) color = 'bg-[#cbd5e1]';
@@ -67,7 +67,7 @@ export function FairnessEquity() {
             <p className="text-on-surface-variant mt-1">Real-time analysis of shift distribution and workload balance.</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-on-surface-variant mr-2">This Week (Oct 15 - 21)</span>
+            <span className="text-sm font-bold text-on-surface mr-2">This Week (Oct 15 - 21)</span>
             <Button variant="outline" className="bg-surface font-bold shadow-sm">
               <Download className="w-4 h-4 mr-2" />
               Export
