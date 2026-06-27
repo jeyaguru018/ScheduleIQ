@@ -164,6 +164,35 @@ export function DemandForecast() {
     }
   };
 
+  const getCurrentTimeLabels = () => {
+    const data = hourlyData.length > 0 ? hourlyData : defaultHourlyData;
+    const currentHour = new Date().getHours();
+    
+    let closestItem = null;
+    let minDiff = 999;
+    
+    data.forEach(item => {
+      let h = parseInt(item.time.replace(/am|pm/, ''));
+      if (item.time.includes('pm') && h !== 12) h += 12;
+      if (item.time.includes('am') && h === 12) h = 0;
+      
+      const diff = Math.abs(h - currentHour);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestItem = item;
+      }
+    });
+
+    if (!closestItem) return { x1: '12pm', x2: '2pm' };
+
+    const idx = data.indexOf(closestItem);
+    const nextItem = data[idx + 1] || closestItem;
+    
+    return { x1: closestItem.time, x2: nextItem.time !== closestItem.time ? nextItem.time : undefined };
+  };
+
+  const { x1: currentX1, x2: currentX2 } = getCurrentTimeLabels();
+
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-surface-variant">
       <div className="w-full mx-auto space-y-6">
@@ -239,15 +268,7 @@ export function DemandForecast() {
                 <RechartsTooltip 
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
-                <ReferenceArea x1="12pm" x2="2pm" fill="#fef2f2" strokeOpacity={0} />
-                <ReferenceArea 
-                  x1="12pm" 
-                  x2="2pm" 
-                  y1={85} 
-                  y2={85} 
-                  label={{ position: 'top', value: '⚠️ Severe Understaffing (12PM - 3PM)', fill: '#ef4444', fontSize: 12, fontWeight: 700 }} 
-                  strokeOpacity={0} 
-                />
+                <ReferenceArea x1={currentX1} x2={currentX2} fill="#bfdbfe" fillOpacity={0.4} strokeOpacity={0} />
                 <Area 
                   type="monotone" 
                   dataKey="staffing" 
