@@ -33,8 +33,15 @@ models/
 *.joblib
 *.pkl
 
-# Large generated PDFs & binaries
-*.pdf
+# Guides & Environment Examples (Kept Local Only)
+.env.example
+Pitch_Guide.md
+Pitch_Guide.pdf
+*ARCHITECTURE*
+*INTERVIEW*
+*GUIDE*
+*.md
+!README.md
 
 # IDE & Editor Specific
 .idea/
